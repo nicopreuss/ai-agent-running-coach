@@ -1,0 +1,48 @@
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+.env/
+
+# ── Environment / secrets ────────────────────────────────────────────────────
+.env
+*.env.local
+*.env.*.local
+
+# ── Poetry ───────────────────────────────────────────────────────────────────
+# Commit poetry.lock for applications; omit for libraries.
+# Uncomment the next line if this is a library:
+# poetry.lock
+
+# ── Testing / coverage ───────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.lcov
+
+# ── Type checkers ────────────────────────────────────────────────────────────
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+# ── IDEs ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
