@@ -238,6 +238,12 @@ Two-panel Streamlit app:
 
 ---
 
+## Development workflow
+
+When implementing a meaningful new feature, create a smoke test script in `scripts/smoke_test_<feature>.py` that exercises the feature and prints a human-readable summary to the terminal. Run it with `poetry run python -m scripts.smoke_test_<feature>`. Smoke tests are manual-only and are not part of the automated test suite.
+
+---
+
 ## Environment variables
 
 All secrets live in `.env` (local) and Render environment variables (deployed). Never in code.
