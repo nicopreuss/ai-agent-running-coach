@@ -5,7 +5,13 @@ All models should live here (or be imported here) so Alembic can auto-generate
 migrations from a single metadata object.
 """
 
-from sqlalchemy.orm import DeclarativeBase
+import uuid
+from datetime import date, datetime
+
+from sqlalchemy import BigInteger, Date, DateTime, Float, Integer, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.sql import func
 
 
 class Base(DeclarativeBase):
@@ -18,13 +24,25 @@ class Base(DeclarativeBase):
     """
 
 
-# REPLACE: define your ORM models below, for example:
-#
-# from sqlalchemy import String, Integer
-# from sqlalchemy.orm import mapped_column, Mapped
-#
-# class ExampleRecord(Base):
-#     __tablename__ = "example_records"
-#
-#     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-#     name: Mapped[str] = mapped_column(String(255), nullable=False)
+class Activity(Base):
+    __tablename__ = "activities"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    strava_activity_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
+    date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    start_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    distance_meters: Mapped[float | None] = mapped_column(Float, nullable=True)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    elapsed_time_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    avg_pace_sec_per_km: Mapped[float | None] = mapped_column(Float, nullable=True)
+    avg_heart_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_heart_rate: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    avg_cadence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    elevation_gain_meters: Mapped[float | None] = mapped_column(Float, nullable=True)
+    suffer_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    pr_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    perceived_effort: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
