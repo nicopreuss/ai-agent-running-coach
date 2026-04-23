@@ -20,6 +20,11 @@ def _get_engine() -> Engine:
     return _engine
 
 
+def get_engine() -> Engine:
+    """Return the singleton SQLAlchemy engine."""
+    return _get_engine()
+
+
 def get_connection() -> Connection:
     """Return an open SQLAlchemy connection from the connection pool.
 
