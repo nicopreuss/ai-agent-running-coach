@@ -24,7 +24,7 @@ class Base(DeclarativeBase):
     """
 
 
-class Activity(Base):
+class StravaActivity(Base):
     __tablename__ = "strava_activities"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

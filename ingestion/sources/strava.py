@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from sqlalchemy.dialects.postgresql import insert
 
 from db.client import get_connection
-from db.models import Activity
+from db.models import StravaActivity
 from ingestion.sources.base import DataSource
 
 load_dotenv()
@@ -132,7 +132,7 @@ class StravaSource(DataSource):
 
         with get_connection() as conn:
             stmt = (
-                insert(Activity)
+                insert(StravaActivity)
                 .values(records)
                 .on_conflict_do_nothing(index_elements=["strava_activity_id"])
             )
