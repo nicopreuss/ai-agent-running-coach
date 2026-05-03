@@ -66,6 +66,21 @@ class WhoopSource(DataSource):
         response.raise_for_status()
         return response.json()
 
+    def _paginate(self, path: str, params: dict | None = None) -> list[dict]:
+        """Fetch all pages from a cursor-paginated Whoop endpoint."""
+        results = []
+        next_token = None
+        while True:
+            page_params = {**(params or {}), "limit": 25}
+            if next_token:
+                page_params["nextToken"] = next_token
+            data = self._get(path, page_params)
+            results.extend(data.get("records", []))
+            next_token = data.get("next_token")
+            if not next_token:
+                break
+        return results
+
     # ── DataSource interface (stubs — filled in next step) ────────────────────
 
     def fetch(self) -> list[dict]:
