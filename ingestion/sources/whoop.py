@@ -2,6 +2,7 @@
 
 import os
 import time
+from datetime import datetime
 
 import requests
 from dotenv import load_dotenv
@@ -102,7 +103,41 @@ class WhoopSource(DataSource):
         ]
 
     def normalize(self, raw: list[dict]) -> list[dict]:
-        raise NotImplementedError
+        """Map merged Whoop dicts to the recovery_daily table schema."""
+        records = []
+        for r in raw:
+            cycle          = r["cycle"]
+            recovery       = r["recovery"]
+            sleep          = r.get("sleep", {})
+            cycle_score    = cycle.get("score") or {}
+            recovery_score = recovery.get("score") or {}
+            sleep_score    = sleep.get("score") or {}
+            stages         = sleep_score.get("stage_summary") or {}
+
+            start = cycle.get("start", "")
+            activity_date = (
+                datetime.fromisoformat(start.replace("Z", "")).date()
+                if start else None
+            )
+
+            records.append({
+                "date": activity_date,
+                "whoop_cycle_id": cycle["id"],
+                "recovery_score": recovery_score.get("recovery_score"),
+                "hrv_rmssd_ms": recovery_score.get("hrv_rmssd_milli"),
+                "resting_heart_rate": recovery_score.get("resting_heart_rate"),
+                "sleep_performance_pct": sleep_score.get("sleep_performance_percentage"),
+                "sleep_efficiency_pct": sleep_score.get("sleep_efficiency_percentage"),
+                "sleep_consistency_pct": sleep_score.get("sleep_consistency_percentage"),
+                "sleep_duration_ms": stages.get("total_in_bed_time_milli"),
+                "swo_deep_sleep_ms": stages.get("slow_wave_sleep_duration_milli"),
+                "rem_sleep_ms": stages.get("rem_sleep_duration_milli"),
+                "light_sleep_ms": stages.get("light_sleep_duration_milli"),
+                "daily_strain": cycle_score.get("strain"),
+                "skin_temp_celsius": recovery_score.get("skin_temp_celsius"),
+                "spo2_percentage": recovery_score.get("spo2_percentage"),
+            })
+        return records
 
     def upsert(self, records: list[dict]) -> int:
         raise NotImplementedError
