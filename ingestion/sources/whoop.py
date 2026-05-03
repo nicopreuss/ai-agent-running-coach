@@ -80,6 +80,7 @@ class WhoopSource(DataSource):
                 page_params["nextToken"] = next_token
             data = self._get(path, page_params)
             results.extend(data.get("records", []))
+            time.sleep(0.5)
             next_token = data.get("next_token")
             if not next_token:
                 break
