@@ -1,6 +1,7 @@
 """Unit tests for WhoopSource._paginate() and normalize()."""
 
 from unittest.mock import MagicMock
+
 import pytest
 
 
@@ -83,9 +84,12 @@ def test_fetch_filters_naps():
     ]
 
     def fake_paginate(path, params=None):
-        if path == "/cycle": return cycles
-        if path == "/recovery": return recoveries
-        if path == "/activity/sleep": return sleeps
+        if path == "/cycle":
+            return cycles
+        if path == "/recovery":
+            return recoveries
+        if path == "/activity/sleep":
+            return sleeps
         return []
 
     source._paginate = MagicMock(side_effect=fake_paginate)
@@ -106,9 +110,12 @@ def test_fetch_skips_cycle_with_no_recovery():
     recoveries = [{"cycle_id": 42, "score": {}}]
 
     def fake_paginate(path, params=None):
-        if path == "/cycle": return cycles
-        if path == "/recovery": return recoveries
-        if path == "/activity/sleep": return []
+        if path == "/cycle":
+            return cycles
+        if path == "/recovery":
+            return recoveries
+        if path == "/activity/sleep":
+            return []
         return []
 
     source._paginate = MagicMock(side_effect=fake_paginate)
@@ -119,8 +126,9 @@ def test_fetch_skips_cycle_with_no_recovery():
 
 
 def test_normalize_maps_all_fields():
-    from ingestion.sources.whoop import WhoopSource
     from datetime import date
+
+    from ingestion.sources.whoop import WhoopSource
 
     source = WhoopSource()
 
@@ -184,7 +192,10 @@ def test_normalize_handles_missing_sleep():
 
     raw = [{
         "cycle": {"id": 99, "start": "2024-01-16T06:00:00Z", "score": {"strain": 5.0}},
-        "recovery": {"cycle_id": 99, "score": {"recovery_score": 70.0, "hrv_rmssd_milli": 60.0, "resting_heart_rate": 52.0}},
+        "recovery": {
+            "cycle_id": 99,
+            "score": {"recovery_score": 70.0, "hrv_rmssd_milli": 60.0, "resting_heart_rate": 52.0},
+        },
         "sleep": {},
     }]
 

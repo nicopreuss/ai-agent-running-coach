@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 import requests
-from dotenv import load_dotenv, set_key, find_dotenv
+from dotenv import find_dotenv, load_dotenv, set_key
 from sqlalchemy.dialects.postgresql import insert
 
 from db.client import get_connection
