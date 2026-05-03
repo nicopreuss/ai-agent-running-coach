@@ -71,7 +71,7 @@ Not production-grade. Do not over-engineer. Prefer simple and explicit over clev
 
 ## Database schema (5 tables)
 
-### `recovery_daily`
+### `whoop_recovery_daily`
 One row per calendar date. Morning health snapshot from Whoop.
 Primary join key to `activities` is `date`.
 
@@ -101,7 +101,7 @@ One row per completed Strava run.
 |---|---|---|
 | id | UUID PK | |
 | strava_activity_id | BIGINT UNIQUE | Dedup key |
-| date | DATE | FK → recovery_daily.date |
+| date | DATE | FK → whoop_recovery_daily.date |
 | start_time | TIMESTAMPTZ | |
 | name | TEXT | |
 | distance_meters | FLOAT | |
@@ -208,7 +208,7 @@ Answers exploratory questions about recent performance. Accepts a lookback windo
 Example: "Give me a summary of my last 2 weeks", "How many km did I run last month?"
 
 ### Tool 2 — `analyze_performance_vs_recovery`
-Joins `activities` and `recovery_daily` on `date` to surface correlations.
+Joins `activities` and `whoop_recovery_daily` on `date` to surface correlations.
 Example: "When my recovery is above 70%, how much faster do I run?", "What's my HR like after poor sleep?"
 
 ### Tool 3 — `get_upcoming_sessions`

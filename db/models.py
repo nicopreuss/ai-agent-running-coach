@@ -48,8 +48,8 @@ class StravaActivity(Base):
     )
 
 
-class RecoveryDaily(Base):
-    __tablename__ = "recovery_daily"
+class WhoopRecoveryDaily(Base):
+    __tablename__ = "whoop_recovery_daily"
 
     date: Mapped[date] = mapped_column(Date, primary_key=True)
     whoop_cycle_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)

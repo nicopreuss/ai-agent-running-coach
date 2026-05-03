@@ -9,7 +9,7 @@ from ingestion.sources.whoop import WhoopSource
 def main() -> None:
     # 1. Count existing rows before ingest
     with get_connection() as conn:
-        before = conn.execute(text("SELECT COUNT(*) FROM recovery_daily")).scalar()
+        before = conn.execute(text("SELECT COUNT(*) FROM whoop_recovery_daily")).scalar()
     print(f"Recovery rows in DB before ingest: {before}")
 
     # 2. Run pipeline
@@ -28,11 +28,11 @@ def main() -> None:
 
     # 3. Query DB to confirm rows are there
     with get_connection() as conn:
-        after = conn.execute(text("SELECT COUNT(*) FROM recovery_daily")).scalar()
+        after = conn.execute(text("SELECT COUNT(*) FROM whoop_recovery_daily")).scalar()
         sample = conn.execute(
             text(
                 "SELECT date, recovery_score, hrv_rmssd_ms, resting_heart_rate, sleep_duration_ms "
-                "FROM recovery_daily ORDER BY date DESC LIMIT 5"
+                "FROM whoop_recovery_daily ORDER BY date DESC LIMIT 5"
             )
         ).fetchall()
 

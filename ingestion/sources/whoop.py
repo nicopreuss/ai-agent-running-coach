@@ -9,7 +9,7 @@ from dotenv import find_dotenv, load_dotenv, set_key
 from sqlalchemy.dialects.postgresql import insert
 
 from db.client import get_connection
-from db.models import RecoveryDaily
+from db.models import WhoopRecoveryDaily
 from ingestion.sources.base import DataSource
 
 load_dotenv()
@@ -110,7 +110,7 @@ class WhoopSource(DataSource):
         ]
 
     def normalize(self, raw: list[dict]) -> list[dict]:
-        """Map merged Whoop dicts to the recovery_daily table schema."""
+        """Map merged Whoop dicts to the whoop_recovery_daily table schema."""
         records = []
         for r in raw:
             cycle          = r["cycle"]
@@ -158,7 +158,7 @@ class WhoopSource(DataSource):
 
         with get_connection() as conn:
             stmt = (
-                insert(RecoveryDaily)
+                insert(WhoopRecoveryDaily)
                 .values(records)
                 .on_conflict_do_nothing(index_elements=["whoop_cycle_id"])
             )
