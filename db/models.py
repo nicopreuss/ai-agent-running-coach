@@ -46,3 +46,26 @@ class StravaActivity(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class RecoveryDaily(Base):
+    __tablename__ = "recovery_daily"
+
+    date: Mapped[date] = mapped_column(Date, primary_key=True)
+    whoop_cycle_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
+    recovery_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hrv_rmssd_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    resting_heart_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sleep_performance_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sleep_efficiency_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sleep_duration_ms: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    swo_deep_sleep_ms: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    rem_sleep_ms: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    light_sleep_ms: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    sleep_consistency_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    daily_strain: Mapped[float | None] = mapped_column(Float, nullable=True)
+    skin_temp_celsius: Mapped[float | None] = mapped_column(Float, nullable=True)
+    spo2_percentage: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
