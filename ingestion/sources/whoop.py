@@ -24,8 +24,8 @@ class WhoopSource(DataSource):
     def __init__(self, start_date: str | None = None) -> None:
         """
         Args:
-            start_date: ISO date string (YYYY-MM-DD) — only fetch records from this date onward.
-                        Pass None to fetch full history (backfill).
+            start_date: ISO 8601 datetime string (e.g. YYYY-MM-DDTHH:MM:SS.000Z) — only fetch
+                        records from this date onward. Pass None to fetch full history (backfill).
         """
         self._client_id = os.environ["WHOOP_CLIENT_ID"]
         self._client_secret = os.environ["WHOOP_CLIENT_SECRET"]
