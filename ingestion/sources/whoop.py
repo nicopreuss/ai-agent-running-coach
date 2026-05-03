@@ -84,7 +84,22 @@ class WhoopSource(DataSource):
     # ── DataSource interface (stubs — filled in next step) ────────────────────
 
     def fetch(self) -> list[dict]:
-        raise NotImplementedError
+        """Fetch all daily records from Whoop, joining cycle + recovery + sleep data."""
+        params = {"start": self._start_date} if self._start_date else {}
+
+        cycles     = {c["id"]: c for c in self._paginate("/cycle", params)}
+        recoveries = {r["cycle_id"]: r for r in self._paginate("/recovery", params)}
+        sleeps     = {
+            s["cycle_id"]: s
+            for s in self._paginate("/activity/sleep", params)
+            if not s.get("nap")
+        }
+
+        return [
+            {"cycle": cycles[cid], "recovery": recoveries[cid], "sleep": sleeps.get(cid, {})}
+            for cid in recoveries
+            if cid in cycles
+        ]
 
     def normalize(self, raw: list[dict]) -> list[dict]:
         raise NotImplementedError
