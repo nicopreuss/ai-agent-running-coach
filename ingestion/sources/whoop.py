@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 import requests
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key, find_dotenv
 from sqlalchemy.dialects.postgresql import insert
 
 from db.client import get_connection
@@ -58,6 +58,9 @@ class WhoopSource(DataSource):
         self._access_token = data["access_token"]
         self._refresh_token = data["refresh_token"]
         self._expires_at = time.time() + data["expires_in"]
+        env_path = find_dotenv()
+        set_key(env_path, "WHOOP_ACCESS_TOKEN", self._access_token)
+        set_key(env_path, "WHOOP_REFRESH_TOKEN", self._refresh_token)
 
     def _get(self, path: str, params: dict | None = None) -> dict:
         """Authenticated GET against the Whoop v2 API."""
@@ -141,7 +144,12 @@ class WhoopSource(DataSource):
                 "skin_temp_celsius": recovery_score.get("skin_temp_celsius"),
                 "spo2_percentage": recovery_score.get("spo2_percentage"),
             })
-        return records
+        seen: dict = {}
+        for r in records:
+            d = r["date"]
+            if d not in seen or (r["whoop_cycle_id"] or 0) > (seen[d]["whoop_cycle_id"] or 0):
+                seen[d] = r
+        return list(seen.values())
 
     def upsert(self, records: list[dict]) -> int:
         """Insert recovery records, skipping any that already exist (dedup on whoop_cycle_id)."""
