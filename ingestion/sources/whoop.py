@@ -6,7 +6,10 @@ from datetime import datetime
 
 import requests
 from dotenv import load_dotenv
+from sqlalchemy.dialects.postgresql import insert
 
+from db.client import get_connection
+from db.models import RecoveryDaily
 from ingestion.sources.base import DataSource
 
 load_dotenv()
@@ -140,4 +143,16 @@ class WhoopSource(DataSource):
         return records
 
     def upsert(self, records: list[dict]) -> int:
-        raise NotImplementedError
+        """Insert recovery records, skipping any that already exist (dedup on whoop_cycle_id)."""
+        if not records:
+            return 0
+
+        with get_connection() as conn:
+            stmt = (
+                insert(RecoveryDaily)
+                .values(records)
+                .on_conflict_do_nothing(index_elements=["whoop_cycle_id"])
+            )
+            result = conn.execute(stmt)
+            conn.commit()
+            return result.rowcount
