@@ -5,10 +5,12 @@ All models should live here (or be imported here) so Alembic can auto-generate
 migrations from a single metadata object.
 """
 
+import enum
 import uuid
 from datetime import date, datetime
 
 from sqlalchemy import BigInteger, Date, DateTime, Float, Integer, Text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -66,6 +68,38 @@ class WhoopRecoveryDaily(Base):
     daily_strain: Mapped[float | None] = mapped_column(Float, nullable=True)
     skin_temp_celsius: Mapped[float | None] = mapped_column(Float, nullable=True)
     spo2_percentage: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class IngestionSource(enum.Enum):
+    whoop = "whoop"
+    strava = "strava"
+    google_calendar = "google_calendar"
+
+
+class IngestionStatus(enum.Enum):
+    success = "success"
+    partial = "partial"
+    failed = "failed"
+
+
+class IngestionLog(Base):
+    __tablename__ = "ingestion_log"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source: Mapped[IngestionSource] = mapped_column(
+        SAEnum(IngestionSource, native_enum=False, length=50), nullable=False
+    )
+    status: Mapped[IngestionStatus] = mapped_column(
+        SAEnum(IngestionStatus, native_enum=False, length=20), nullable=False
+    )
+    records_fetched: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    records_inserted: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    records_skipped: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
