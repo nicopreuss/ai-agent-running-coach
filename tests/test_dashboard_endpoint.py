@@ -138,3 +138,53 @@ def test_get_dashboard_summary_handles_empty_db():
     assert result.whoop is None
     assert result.last_run is None
     assert result.next_session is None
+
+
+def test_dashboard_summary_endpoint_returns_ok():
+    whoop = WhoopSnapshot(
+        recovery_score=82.0,
+        sleep_performance_pct=79.0,
+        daily_strain=12.4,
+        date=datetime.date(2026, 5, 4),
+    )
+    run = LastRunSnapshot(
+        distance_km=8.2,
+        duration_seconds=2712,
+        avg_pace_sec_per_km=330.0,
+        avg_heart_rate=148.0,
+        date=datetime.date(2026, 5, 4),
+    )
+    session = NextSessionSnapshot(title="Fast 8-4-2s · 8.1km", date=datetime.date(2026, 5, 6))
+    summary = DashboardSummary(whoop=whoop, last_run=run, next_session=session)
+
+    with patch("api.main.get_dashboard_summary", return_value=summary):
+        from fastapi.testclient import TestClient
+
+        from api.main import app
+
+        with TestClient(app) as client:
+            response = client.get("/dashboard/summary")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["whoop"]["recovery_score"] == 82.0
+    assert data["last_run"]["distance_km"] == 8.2
+    assert data["next_session"]["title"] == "Fast 8-4-2s · 8.1km"
+
+
+def test_dashboard_summary_endpoint_returns_nulls_when_empty():
+    summary = DashboardSummary(whoop=None, last_run=None, next_session=None)
+
+    with patch("api.main.get_dashboard_summary", return_value=summary):
+        from fastapi.testclient import TestClient
+
+        from api.main import app
+
+        with TestClient(app) as client:
+            response = client.get("/dashboard/summary")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["whoop"] is None
+    assert data["last_run"] is None
+    assert data["next_session"] is None
