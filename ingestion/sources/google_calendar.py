@@ -7,6 +7,9 @@ from datetime import date, datetime
 from ingestion.sources.base import DataSource
 
 _RUNNA_URL_RE = re.compile(r"https://club\.runna\.com\S+")
+_TOKEN_URL = "https://oauth2.googleapis.com/token"
+_CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
+_WINDOW_DAYS = 90
 
 
 class GoogleCalendarSource(DataSource):
