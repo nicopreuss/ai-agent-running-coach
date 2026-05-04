@@ -3,7 +3,7 @@
 import os
 import re
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 
 import requests
 from sqlalchemy.dialects.postgresql import insert
@@ -15,9 +15,11 @@ from ingestion.sources.base import DataSource
 _RUNNA_URL_RE = re.compile(r"https://club\.runna\.com\S+")
 _TOKEN_URL = "https://oauth2.googleapis.com/token"
 _CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
-_WINDOW_DAYS = 90
-# Events before this date pre-date the training plan and are excluded.
+
+# Training plan window — derived from RUNNA_PLAN_START_DATE and RUNNA_PLAN_DURATION_WEEKS.
 _PLAN_START_DATE = date.fromisoformat(os.environ.get("RUNNA_PLAN_START_DATE", "2026-03-02"))
+_PLAN_DURATION_WEEKS = int(os.environ.get("RUNNA_PLAN_DURATION_WEEKS", "12"))
+_PLAN_END_DATE = _PLAN_START_DATE + timedelta(weeks=_PLAN_DURATION_WEEKS)
 
 
 class GoogleCalendarSource(DataSource):
@@ -54,10 +56,9 @@ class GoogleCalendarSource(DataSource):
         return self._access_token  # type: ignore[return-value]
 
     def fetch(self) -> list[dict]:
-        """Fetch all events in the rolling 90-day window from Google Calendar."""
-        now = datetime.now(tz=timezone.utc)
-        time_min = (now - timedelta(days=_WINDOW_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        time_max = (now + timedelta(days=_WINDOW_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        """Fetch all calendar events within the training plan window (start → start + duration)."""
+        time_min = _PLAN_START_DATE.strftime("%Y-%m-%dT%H:%M:%SZ")
+        time_max = _PLAN_END_DATE.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         results = []
         page_token = None
