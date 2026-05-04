@@ -1,5 +1,6 @@
 """Tests for the agent module."""
 
+import pytest
 from unittest.mock import MagicMock, patch
 
 
@@ -42,8 +43,6 @@ def test_run_extracts_tool_names_from_intermediate_steps() -> None:
 
 def test_run_reraises_on_failure() -> None:
     """agent.run() should re-raise exceptions raised by the executor."""
-    import pytest
-
     mock_executor = MagicMock()
     mock_executor.invoke.side_effect = RuntimeError("LLM unavailable")
 
