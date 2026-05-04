@@ -1,4 +1,5 @@
 from datetime import date
+from unittest.mock import MagicMock, patch
 
 from ingestion.sources.google_calendar import GoogleCalendarSource
 
@@ -70,3 +71,40 @@ def test_normalize_empty_input():
 def test_normalize_skips_event_with_no_description():
     raw = [{"id": "evt3", "summary": "No desc", "start": {"date": "2026-05-10"}}]
     assert _make_source().normalize(raw) == []
+
+
+def test_token_refresh_sends_readonly_scope():
+    source = _make_source()
+    source._expires_at = 0
+
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {"access_token": "new_token", "expires_in": 3600}
+
+    with patch(
+        "ingestion.sources.google_calendar.requests.post", return_value=mock_resp
+    ) as mock_post:
+        source._do_token_refresh()
+
+    posted_data = mock_post.call_args.kwargs["data"]
+    assert "calendar.readonly" in posted_data["scope"]
+    assert source._access_token == "new_token"
+
+
+def test_fetch_paginates_correctly():
+    source = _make_source()
+
+    page1 = {"items": [{"id": "evt1"}], "nextPageToken": "tok123"}
+    page2 = {"items": [{"id": "evt2"}]}
+
+    mock_r1, mock_r2 = MagicMock(), MagicMock()
+    mock_r1.json.return_value = page1
+    mock_r2.json.return_value = page2
+
+    with patch(
+        "ingestion.sources.google_calendar.requests.get", side_effect=[mock_r1, mock_r2]
+    ):
+        result = source.fetch()
+
+    assert len(result) == 2
+    assert result[0]["id"] == "evt1"
+    assert result[1]["id"] == "evt2"

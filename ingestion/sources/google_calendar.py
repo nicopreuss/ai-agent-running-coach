@@ -2,7 +2,10 @@
 
 import os
 import re
-from datetime import date, datetime
+import time
+from datetime import date, datetime, timedelta, timezone
+
+import requests
 
 from ingestion.sources.base import DataSource
 
@@ -23,8 +26,61 @@ class GoogleCalendarSource(DataSource):
         self._access_token: str | None = None
         self._expires_at: float = 0
 
+    def _do_token_refresh(self) -> None:
+        response = requests.post(
+            _TOKEN_URL,
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": self._refresh_token,
+                "client_id": self._client_id,
+                "client_secret": self._client_secret,
+                "scope": "https://www.googleapis.com/auth/calendar.readonly",
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        data = response.json()
+        self._access_token = data["access_token"]
+        self._expires_at = time.time() + data["expires_in"]
+
+    def _ensure_valid_token(self) -> str:
+        if time.time() >= self._expires_at:
+            self._do_token_refresh()
+        return self._access_token  # type: ignore[return-value]
+
     def fetch(self) -> list[dict]:
-        raise NotImplementedError
+        """Fetch all events in the rolling 90-day window from Google Calendar."""
+        now = datetime.now(tz=timezone.utc)
+        time_min = (now - timedelta(days=_WINDOW_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        time_max = (now + timedelta(days=_WINDOW_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        results = []
+        page_token = None
+        while True:
+            params: dict = {
+                "timeMin": time_min,
+                "timeMax": time_max,
+                "singleEvents": "true",
+                "orderBy": "startTime",
+                "maxResults": 250,
+            }
+            if page_token:
+                params["pageToken"] = page_token
+
+            response = requests.get(
+                f"{_CALENDAR_API_BASE}/calendars/{self._calendar_id}/events",
+                headers={"Authorization": f"Bearer {self._ensure_valid_token()}"},
+                params=params,
+                timeout=10,
+            )
+            response.raise_for_status()
+            data = response.json()
+            results.extend(data.get("items", []))
+            page_token = data.get("nextPageToken")
+            if not page_token:
+                break
+
+        return results
 
     def normalize(self, raw: list[dict]) -> list[dict]:
         """Filter to Runna events and map to the DB schema."""
