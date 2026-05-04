@@ -6,6 +6,7 @@ import os
 
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 _API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000")
 
@@ -107,24 +108,41 @@ def _render_chat() -> None:
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    for msg in st.session_state.messages:
-        if msg["role"] == "user":
-            with st.chat_message("user"):
-                st.markdown(msg["content"])
-        else:
-            if msg["tools_used"]:
-                chips_html = " ".join(
-                    f'<span style="background:#1e3a2a;border:1px solid #2a5a3a;'
-                    f'border-radius:12px;padding:3px 8px;color:#4aaa6a;'
-                    f'font-size:0.75rem;">🔧 {html.escape(tool)}</span>'
-                    for tool in msg["tools_used"]
-                )
-                st.markdown(
-                    f'<div style="margin:4px 0 8px 0">{chips_html}</div>',
-                    unsafe_allow_html=True,
-                )
-            with st.chat_message("assistant"):
-                st.markdown(msg["content"])
+    with st.container(height=650):
+        for msg in st.session_state.messages:
+            if msg["role"] == "user":
+                with st.chat_message("user"):
+                    st.markdown(msg["content"])
+            else:
+                if msg["tools_used"]:
+                    chips_html = " ".join(
+                        f'<span style="background:#1e3a2a;border:1px solid #2a5a3a;'
+                        f'border-radius:12px;padding:3px 8px;color:#4aaa6a;'
+                        f'font-size:0.75rem;">🔧 {html.escape(tool)}</span>'
+                        for tool in msg["tools_used"]
+                    )
+                    st.markdown(
+                        f'<div style="margin:4px 0 8px 0">{chips_html}</div>',
+                        unsafe_allow_html=True,
+                    )
+                with st.chat_message("assistant"):
+                    st.markdown(msg["content"])
+
+    # Scroll chat box to bottom. Targets an internal Streamlit testid — verify on major upgrades.
+    components.html(
+        """
+        <script>
+        const containers = window.parent.document.querySelectorAll(
+            '[data-testid="stVerticalBlockBorderWrapper"]'
+        );
+        if (containers.length > 0) {
+            const chatBox = containers[containers.length - 1];
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        </script>
+        """,
+        height=0,
+    )
 
     if query := st.chat_input("Ask your coach..."):
         st.session_state.messages.append(
@@ -154,6 +172,17 @@ def _render_chat() -> None:
 
 
 st.set_page_config(page_title="Running Coach", layout="wide")
+
+st.markdown(
+    """
+    <style>
+    .main > .block-container { padding-bottom: 0rem; }
+    section.main { overflow: hidden; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.title("Running Coach")
 
 # ── Sidebar: data controls ────────────────────────────────────────────────────
