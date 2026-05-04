@@ -1,6 +1,7 @@
 """Streamlit UI: metrics dashboard + chat interface for the running coach agent."""
 
 import datetime
+import html
 import os
 
 import requests
@@ -102,6 +103,7 @@ def _render_dashboard() -> None:
 
 
 def _render_chat() -> None:
+    """Render the chat panel: session history as bubbles, tool chips, and the input box."""
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
@@ -112,14 +114,15 @@ def _render_chat() -> None:
         else:
             if msg["tools_used"]:
                 chips_html = " ".join(
-                    f'<div style="margin:4px 0 8px 0">'
                     f'<span style="background:#1e3a2a;border:1px solid #2a5a3a;'
                     f'border-radius:12px;padding:3px 8px;color:#4aaa6a;'
-                    f'font-size:0.75rem;">🔧 {tool}</span>'
-                    f'</div>'
+                    f'font-size:0.75rem;">🔧 {html.escape(tool)}</span>'
                     for tool in msg["tools_used"]
                 )
-                st.markdown(chips_html, unsafe_allow_html=True)
+                st.markdown(
+                    f'<div style="margin:4px 0 8px 0">{chips_html}</div>',
+                    unsafe_allow_html=True,
+                )
             with st.chat_message("assistant"):
                 st.markdown(msg["content"])
 
