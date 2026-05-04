@@ -183,3 +183,23 @@ def test_dashboard_summary_endpoint_returns_nulls_when_empty():
     assert data["whoop"] is None
     assert data["last_run"] is None
     assert data["next_session"] is None
+
+
+def test_recovery_colour_green():
+    from ui.app import _recovery_colour
+    assert _recovery_colour(70.0) == "#4ade80"
+    assert _recovery_colour(85.0) == "#4ade80"
+    assert _recovery_colour(100.0) == "#4ade80"
+
+
+def test_recovery_colour_yellow():
+    from ui.app import _recovery_colour
+    assert _recovery_colour(40.0) == "#facc15"
+    assert _recovery_colour(55.0) == "#facc15"
+    assert _recovery_colour(69.9) == "#facc15"
+
+
+def test_recovery_colour_red():
+    from ui.app import _recovery_colour
+    assert _recovery_colour(0.0) == "#f87171"
+    assert _recovery_colour(39.9) == "#f87171"
