@@ -1,7 +1,8 @@
 """Tests for the agent module."""
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 def test_run_returns_response_dict() -> None:
