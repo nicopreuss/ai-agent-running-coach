@@ -154,6 +154,17 @@ def _render_chat() -> None:
 
 
 st.set_page_config(page_title="Running Coach", layout="wide")
+
+st.markdown(
+    """
+    <style>
+    .main > .block-container { padding-bottom: 0rem; }
+    section.main { overflow: hidden; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.title("Running Coach")
 
 # ── Sidebar: data controls ────────────────────────────────────────────────────
