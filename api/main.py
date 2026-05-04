@@ -51,6 +51,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+    tools_used: list[str] = []
 
 
 class IngestResponse(BaseModel):
@@ -71,8 +72,8 @@ def health() -> dict[str, str]:
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
     """Run the user query through the agent and return the response."""
-    response = agent_module.run(request.query)
-    return ChatResponse(response=response)
+    result = agent_module.run(request.query)
+    return ChatResponse(response=result["response"], tools_used=result["tools_used"])
 
 
 @app.post("/ingest/whoop", response_model=IngestResponse)

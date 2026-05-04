@@ -2,6 +2,7 @@
 
 import logging
 import os
+from typing import Any
 
 from dotenv import load_dotenv
 from langchain.agents import AgentExecutor, create_react_agent
@@ -38,11 +39,10 @@ _REACT_TEMPLATE = (
 def build_agent() -> AgentExecutor:
     """Instantiate and return the ReAct AgentExecutor."""
     llm = ChatOpenAI(
-        model=os.environ["OPENAI_MODEL"],  # REPLACE: e.g. "gpt-4o"
+        model=os.environ["OPENAI_MODEL"],
         temperature=0,
     )
 
-    # REGISTER YOUR TOOLS HERE — import from agent/tools.py and add to this list
     tools = get_tools()
 
     prompt = PromptTemplate.from_template(_REACT_TEMPLATE).partial(
@@ -56,15 +56,16 @@ def build_agent() -> AgentExecutor:
 _agent: AgentExecutor | None = None
 
 
-def run(query: str) -> str:
-    """Invoke the agent with *query* and return the text response."""
+def run(query: str) -> dict[str, Any]:
+    """Invoke the agent with *query* and return response text plus tool names used."""
     global _agent
     if _agent is None:
         _agent = build_agent()
 
     try:
         result = _agent.invoke({"input": query})
-        return result["output"]
+        tools_used = [action.tool for action, _ in result.get("intermediate_steps", [])]
+        return {"response": result["output"], "tools_used": tools_used}
     except Exception:
         logger.exception("Agent invocation failed for query: %s", query)
         raise
