@@ -128,6 +128,7 @@ def _render_chat() -> None:
                 with st.chat_message("assistant"):
                     st.markdown(msg["content"])
 
+    # Scroll chat box to bottom. Targets an internal Streamlit testid — verify on major upgrades.
     components.html(
         """
         <script>
