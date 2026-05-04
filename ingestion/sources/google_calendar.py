@@ -3,7 +3,7 @@
 import os
 import re
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 
 import requests
 from sqlalchemy.dialects.postgresql import insert
@@ -15,7 +15,11 @@ from ingestion.sources.base import DataSource
 _RUNNA_URL_RE = re.compile(r"https://club\.runna\.com\S+")
 _TOKEN_URL = "https://oauth2.googleapis.com/token"
 _CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
-_WINDOW_DAYS = 90
+
+# Training plan window — derived from RUNNA_PLAN_START_DATE and RUNNA_PLAN_DURATION_WEEKS.
+_PLAN_START_DATE = date.fromisoformat(os.environ.get("RUNNA_PLAN_START_DATE", "2026-03-02"))
+_PLAN_DURATION_WEEKS = int(os.environ.get("RUNNA_PLAN_DURATION_WEEKS", "12"))
+_PLAN_END_DATE = _PLAN_START_DATE + timedelta(weeks=_PLAN_DURATION_WEEKS)
 
 
 class GoogleCalendarSource(DataSource):
@@ -52,10 +56,9 @@ class GoogleCalendarSource(DataSource):
         return self._access_token  # type: ignore[return-value]
 
     def fetch(self) -> list[dict]:
-        """Fetch all events in the rolling 90-day window from Google Calendar."""
-        now = datetime.now(tz=timezone.utc)
-        time_min = (now - timedelta(days=_WINDOW_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        time_max = (now + timedelta(days=_WINDOW_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        """Fetch all calendar events within the training plan window (start → start + duration)."""
+        time_min = _PLAN_START_DATE.strftime("%Y-%m-%dT%H:%M:%SZ")
+        time_max = _PLAN_END_DATE.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         results = []
         page_token = None
@@ -86,15 +89,21 @@ class GoogleCalendarSource(DataSource):
         return results
 
     def normalize(self, raw: list[dict]) -> list[dict]:
-        """Filter to Runna events and map to the DB schema."""
+        """Filter to Runna training events and map to the DB schema.
+
+        Three filters are applied in order:
+        1. Events with no club.runna.com in the description are skipped.
+        2. Events before _PLAN_START_DATE pre-date the training plan — skipped.
+        3. Past events whose Runna URL contains activityId=strava- are Strava-synced
+           completed runs (not training sessions) — skipped. Future events are always
+           planned sessions and bypass this check.
+        """
+        today = date.today()
         records = []
         for event in raw:
             description = event.get("description") or ""
             if "club.runna.com" not in description:
                 continue
-
-            match = _RUNNA_URL_RE.search(description)
-            runna_url = match.group(0) if match else None
 
             start = event.get("start", {})
             event_date: date | None = None
@@ -102,6 +111,17 @@ class GoogleCalendarSource(DataSource):
                 event_date = date.fromisoformat(start["date"])
             elif "dateTime" in start:
                 event_date = datetime.fromisoformat(start["dateTime"]).date()
+
+            if event_date is not None and event_date < _PLAN_START_DATE:
+                continue
+
+            match = _RUNNA_URL_RE.search(description)
+            runna_url = match.group(0) if match else None
+
+            # Future events are definitionally planned sessions — skip the strava check.
+            is_past = event_date is None or event_date < today
+            if is_past and runna_url and "activityId=strava-" in runna_url:
+                continue
 
             records.append({
                 "google_event_id": event["id"],

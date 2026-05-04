@@ -1,6 +1,10 @@
 """Smoke test: fetch and display Runna sessions from Google Calendar."""
 
-from ingestion.sources.google_calendar import GoogleCalendarSource
+from ingestion.sources.google_calendar import (
+    _PLAN_END_DATE,
+    _PLAN_START_DATE,
+    GoogleCalendarSource,
+)
 
 
 def main() -> None:
@@ -8,7 +12,10 @@ def main() -> None:
     source = GoogleCalendarSource()
 
     raw = source.fetch()
-    print(f"Fetched {len(raw)} total events from calendar (90-day window).")
+    print(
+        f"Fetched {len(raw)} total events from calendar "
+        f"({_PLAN_START_DATE} → {_PLAN_END_DATE})."
+    )
 
     normalised = source.normalize(raw)
     print(f"Found {len(normalised)} Runna sessions.")
