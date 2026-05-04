@@ -41,6 +41,7 @@ def build_agent() -> AgentExecutor:
     llm = ChatOpenAI(
         model=os.environ["OPENAI_MODEL"],
         temperature=0,
+        user="running-coach-agent",
     )
 
     tools = get_tools()
@@ -50,7 +51,7 @@ def build_agent() -> AgentExecutor:
     )
 
     agent = create_react_agent(llm=llm, tools=tools, prompt=prompt)
-    return AgentExecutor(agent=agent, tools=tools, verbose=True)
+    return AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
 
 
 _agent: AgentExecutor | None = None
