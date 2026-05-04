@@ -1,13 +1,15 @@
-"""Core agent module: initializes the LangChain ReAct agent and exposes a run() entrypoint."""
+"""Core agent module: initializes the LangGraph ReAct agent and exposes a run() entrypoint."""
 
 import logging
 import os
 from typing import Any
+from uuid import uuid4
 
 from dotenv import load_dotenv
-from langchain.agents import AgentExecutor, create_react_agent
-from langchain_core.prompts import PromptTemplate
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.prebuilt import create_react_agent
 
 from agent.prompts import SYSTEM_PROMPT
 from agent.tools import get_tools
@@ -16,45 +18,27 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# create_react_agent requires {tools}, {tool_names}, {input}, and {agent_scratchpad}.
-# SYSTEM_PROMPT is pre-filled via .partial() so it isn't exposed as a runtime variable.
-_REACT_TEMPLATE = (
-    "{system_prompt}\n\n"
-    "You have access to the following tools:\n\n{tools}\n\n"
-    "Use the following format:\n\n"
-    "Question: the input question you must answer\n"
-    "Thought: you should always think about what to do\n"
-    "Action: the action to take, should be one of [{tool_names}]\n"
-    "Action Input: the input to the action\n"
-    "Observation: the result of the action\n"
-    "... (this Thought/Action/Action Input/Observation can repeat N times)\n"
-    "Thought: I now know the final answer\n"
-    "Final Answer: the final answer to the original input question\n\n"
-    "Begin!\n\n"
-    "Question: {input}\n"
-    "Thought:{agent_scratchpad}"
-)
+_SESSION_ID = str(uuid4())
+_THREAD = {"configurable": {"thread_id": _SESSION_ID}}
 
 
-def build_agent() -> AgentExecutor:
-    """Instantiate and return the ReAct AgentExecutor."""
+def build_agent():
+    """Instantiate and return the LangGraph ReAct agent with memory."""
     llm = ChatOpenAI(
         model=os.environ["OPENAI_MODEL"],
         temperature=0,
-        user="running-coach-agent",
+        default_headers={"X-Session-ID": _SESSION_ID},
+    )
+    checkpointer = MemorySaver()
+    return create_react_agent(
+        llm,
+        tools=get_tools(),
+        prompt=SystemMessage(content=SYSTEM_PROMPT),
+        checkpointer=checkpointer,
     )
 
-    tools = get_tools()
 
-    prompt = PromptTemplate.from_template(_REACT_TEMPLATE).partial(
-        system_prompt=SYSTEM_PROMPT
-    )
-
-    agent = create_react_agent(llm=llm, tools=tools, prompt=prompt)
-    return AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
-
-
-_agent: AgentExecutor | None = None
+_agent = None
 
 
 def run(query: str) -> dict[str, Any]:
@@ -62,11 +46,26 @@ def run(query: str) -> dict[str, Any]:
     global _agent
     if _agent is None:
         _agent = build_agent()
-
     try:
-        result = _agent.invoke({"input": query})
-        tools_used = [action.tool for action, _ in result.get("intermediate_steps", [])]
-        return {"response": result["output"], "tools_used": tools_used}
+        result = _agent.invoke(
+            {"messages": [HumanMessage(content=query)]},
+            config=_THREAD,
+        )
+        tools_used = [
+            tc["name"]
+            for msg in result["messages"]
+            if hasattr(msg, "tool_calls")
+            for tc in (msg.tool_calls or [])
+        ]
+        final = next(
+            (
+                msg.content
+                for msg in reversed(result["messages"])
+                if msg.type == "ai" and not msg.tool_calls
+            ),
+            "",
+        )
+        return {"response": final, "tools_used": tools_used}
     except Exception:
         logger.exception("Agent invocation failed for query: %s", query)
         raise
