@@ -1,6 +1,8 @@
 import datetime
 from unittest.mock import MagicMock, patch
 
+from fastapi.testclient import TestClient
+
 from api.dashboard import (
     DashboardSummary,
     LastRunSnapshot,
@@ -11,6 +13,7 @@ from api.dashboard import (
     get_next_session_snapshot,
     get_whoop_snapshot,
 )
+from api.main import app
 
 
 def _mock_row(data: dict):
@@ -158,10 +161,6 @@ def test_dashboard_summary_endpoint_returns_ok():
     summary = DashboardSummary(whoop=whoop, last_run=run, next_session=session)
 
     with patch("api.main.get_dashboard_summary", return_value=summary):
-        from fastapi.testclient import TestClient
-
-        from api.main import app
-
         with TestClient(app) as client:
             response = client.get("/dashboard/summary")
 
@@ -176,10 +175,6 @@ def test_dashboard_summary_endpoint_returns_nulls_when_empty():
     summary = DashboardSummary(whoop=None, last_run=None, next_session=None)
 
     with patch("api.main.get_dashboard_summary", return_value=summary):
-        from fastapi.testclient import TestClient
-
-        from api.main import app
-
         with TestClient(app) as client:
             response = client.get("/dashboard/summary")
 
