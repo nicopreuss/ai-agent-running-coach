@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 import agent.agent as agent_module
+from api.dashboard import DashboardSummary, get_dashboard_summary
 from ingestion import pipeline
 
 _scheduler = BackgroundScheduler()
@@ -104,3 +105,12 @@ def ingest_google_calendar() -> IngestResponse:
     return IngestResponse(
         status="ok", source="google_calendar", records_inserted=result["records_inserted"]
     )
+
+
+@app.get("/dashboard/summary", response_model=DashboardSummary)
+def dashboard_summary() -> DashboardSummary:
+    """Return the latest Whoop snapshot, last run, and next planned session."""
+    try:
+        return get_dashboard_summary()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
