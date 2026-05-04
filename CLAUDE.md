@@ -4,7 +4,7 @@
 
 A personal running coach AI agent built for the DataExpert.io AI Engineer Bootcamp capstone.
 It ingests training and physiological data from Strava, Whoop, and Google Calendar into a unified
-Postgres schema, then exposes a LangChain agent that can answer analytical questions about
+Postgres schema, then exposes a LangGraph agent that can answer analytical questions about
 training, recovery, and upcoming sessions.
 
 **This is a single-user personal project, not a multi-user product.** The user is the only athlete.
@@ -34,7 +34,7 @@ Not production-grade. Do not over-engineer. Prefer simple and explicit over clev
 | Package manager | Poetry |
 | Database | Postgres via Supabase (free tier) |
 | ORM | SQLAlchemy 2.0 |
-| Agent framework | LangChain (ReAct agent) |
+| Agent framework | LangGraph (create_react_agent + MemorySaver) |
 | LLM | OpenAI GPT-4o |
 | API backend | FastAPI |
 | Frontend | Streamlit (fast MVP) |
@@ -200,7 +200,7 @@ One row per pipeline run per source. Provides watermark for incremental fetches.
 
 ## Agent layer
 
-LangChain ReAct agent backed by three tools. Each tool runs SQL against Postgres and returns
+LangGraph ReAct agent backed by three tools. Each tool runs SQL against Postgres and returns
 structured results the agent cites in its response.
 
 ### Tool 1 — `get_recent_stats`
