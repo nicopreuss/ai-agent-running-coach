@@ -16,6 +16,8 @@ _RUNNA_URL_RE = re.compile(r"https://club\.runna\.com\S+")
 _TOKEN_URL = "https://oauth2.googleapis.com/token"
 _CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
 _WINDOW_DAYS = 90
+# Events before this date pre-date the training plan and are excluded.
+_PLAN_START_DATE = date.fromisoformat(os.environ.get("RUNNA_PLAN_START_DATE", "2026-03-02"))
 
 
 class GoogleCalendarSource(DataSource):
@@ -86,15 +88,21 @@ class GoogleCalendarSource(DataSource):
         return results
 
     def normalize(self, raw: list[dict]) -> list[dict]:
-        """Filter to Runna events and map to the DB schema."""
+        """Filter to Runna training events and map to the DB schema.
+
+        Three filters are applied in order:
+        1. Events with no club.runna.com in the description are skipped.
+        2. Events before _PLAN_START_DATE pre-date the training plan — skipped.
+        3. Past events whose Runna URL contains activityId=strava- are Strava-synced
+           completed runs (not training sessions) — skipped. Future events are always
+           planned sessions and bypass this check.
+        """
+        today = date.today()
         records = []
         for event in raw:
             description = event.get("description") or ""
             if "club.runna.com" not in description:
                 continue
-
-            match = _RUNNA_URL_RE.search(description)
-            runna_url = match.group(0) if match else None
 
             start = event.get("start", {})
             event_date: date | None = None
@@ -102,6 +110,17 @@ class GoogleCalendarSource(DataSource):
                 event_date = date.fromisoformat(start["date"])
             elif "dateTime" in start:
                 event_date = datetime.fromisoformat(start["dateTime"]).date()
+
+            if event_date is not None and event_date < _PLAN_START_DATE:
+                continue
+
+            match = _RUNNA_URL_RE.search(description)
+            runna_url = match.group(0) if match else None
+
+            # Future events are definitionally planned sessions — skip the strava check.
+            is_past = event_date is None or event_date < today
+            if is_past and runna_url and "activityId=strava-" in runna_url:
+                continue
 
             records.append({
                 "google_event_id": event["id"],

@@ -73,6 +73,98 @@ def test_normalize_skips_event_with_no_description():
     assert _make_source().normalize(raw) == []
 
 
+def test_normalize_excludes_events_before_plan_start():
+    """Events dated before the training plan start date are always skipped."""
+    desc = "📲 View in the Runna app: https://club.runna.com/n9Tx/workout?dayId=abc"
+    raw = [
+        {
+            "id": "evt_old",
+            "summary": "Easy Run",
+            "description": desc,
+            "start": {"date": "2026-02-28"},  # one day before plan start
+        }
+    ]
+    assert _make_source().normalize(raw) == []
+
+
+def test_normalize_includes_event_on_plan_start_date():
+    """Events on exactly the plan start date are included."""
+    desc = "📲 View in the Runna app: https://club.runna.com/n9Tx/workout?dayId=abc"
+    raw = [
+        {
+            "id": "evt_start",
+            "summary": "Easy Run",
+            "description": desc,
+            "start": {"date": "2026-03-02"},
+        }
+    ]
+    result = _make_source().normalize(raw)
+    assert len(result) == 1
+    assert result[0]["google_event_id"] == "evt_start"
+
+
+def test_normalize_excludes_strava_synced_past_events():
+    """Past events with activityId=strava- in the Runna URL are Strava-synced runs — skipped."""
+    desc = (
+        "📊 Summary:\nTime: 46:29\n\n"
+        "📲 View in the Runna app: "
+        "https://club.runna.com/n9Tx/activities?activityId=strava-17543720068"
+    )
+    raw = [
+        {
+            "id": "evt_strava",
+            "summary": "Morning Run",
+            "description": desc,
+            "start": {"date": "2026-04-26"},
+        }
+    ]
+    assert _make_source().normalize(raw) == []
+
+
+def test_normalize_keeps_garmin_completed_runna_event():
+    """Past events with activityId=garmin- are Runna sessions completed via Garmin — kept."""
+    desc = (
+        "📊 Summary:\nDistance: 5.01km\n\n"
+        "📲 View in the Runna app: "
+        "https://club.runna.com/n9Tx/activities?activityId=garmin-22037458934"
+    )
+    raw = [
+        {
+            "id": "evt_garmin",
+            "summary": "5km Easy Run",
+            "description": desc,
+            "start": {"date": "2026-03-02"},
+        }
+    ]
+    result = _make_source().normalize(raw)
+    assert len(result) == 1
+    assert result[0]["google_event_id"] == "evt_garmin"
+
+
+def test_normalize_future_events_bypass_strava_filter():
+    """Future events are planned sessions by definition — strava URL check is skipped."""
+    # Construct a date guaranteed to be in the future
+    from datetime import date, timedelta
+
+    future_date = (date.today() + timedelta(days=10)).isoformat()
+    # Even if the URL looked strava-like, a future event should be kept.
+    desc = (
+        "📲 View in the Runna app: "
+        "https://club.runna.com/n9Tx/workout?dayId=future-session-123"
+    )
+    raw = [
+        {
+            "id": "evt_future",
+            "summary": "Long Run",
+            "description": desc,
+            "start": {"date": future_date},
+        }
+    ]
+    result = _make_source().normalize(raw)
+    assert len(result) == 1
+    assert result[0]["google_event_id"] == "evt_future"
+
+
 def test_token_refresh_sends_readonly_scope():
     source = _make_source()
     source._expires_at = 0
