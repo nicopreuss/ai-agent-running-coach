@@ -18,7 +18,11 @@ def _recovery_colour(score: float) -> str:
 
 
 def _fmt_duration(seconds: int) -> str:
-    return f"{seconds // 60}:{seconds % 60:02d}"
+    h, rem = divmod(seconds, 3600)
+    m, s = divmod(rem, 60)
+    if h:
+        return f"{h}:{m:02d}:{s:02d}"
+    return f"{m}:{s:02d}"
 
 
 def _fmt_pace(sec_per_km: float) -> str:
@@ -28,6 +32,8 @@ def _fmt_pace(sec_per_km: float) -> str:
 
 def _days_label(session_date: datetime.date) -> str:
     days = (session_date - datetime.date.today()).days
+    if days < 0:
+        return "Past"
     if days == 0:
         return "Today"
     if days == 1:
