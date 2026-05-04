@@ -30,10 +30,15 @@ def test_refresh_strava_already_up_to_date():
     assert "already up to date" in result
 
 
-def test_refresh_all_calls_both_sources():
-    responses = [_mock_response("whoop", 1), _mock_response("strava", 2)]
+def test_refresh_all_calls_all_sources():
+    responses = [
+        _mock_response("whoop", 1),
+        _mock_response("strava", 2),
+        _mock_response("google_calendar", 0),
+    ]
     with patch("agent.tools.requests.post", side_effect=responses):
         result = refresh_data.invoke({"source": "all"})
 
     assert "Whoop" in result
     assert "Strava" in result
+    assert "Google Calendar" in result
