@@ -4,6 +4,7 @@ import datetime
 
 from pydantic import BaseModel
 from sqlalchemy import text
+from sqlalchemy.engine import Connection
 
 from db.client import get_connection
 
@@ -34,13 +35,16 @@ class DashboardSummary(BaseModel):
     next_session: NextSessionSnapshot | None
 
 
-def get_whoop_snapshot(conn) -> WhoopSnapshot | None:
+def get_whoop_snapshot(conn: Connection) -> WhoopSnapshot | None:
     row = (
         conn.execute(
             text(
                 """
                 SELECT recovery_score, sleep_performance_pct, daily_strain, date
                 FROM whoop_recovery_daily
+                WHERE recovery_score IS NOT NULL
+                  AND sleep_performance_pct IS NOT NULL
+                  AND daily_strain IS NOT NULL
                 ORDER BY date DESC
                 LIMIT 1
                 """
@@ -59,7 +63,7 @@ def get_whoop_snapshot(conn) -> WhoopSnapshot | None:
     )
 
 
-def get_last_run_snapshot(conn) -> LastRunSnapshot | None:
+def get_last_run_snapshot(conn: Connection) -> LastRunSnapshot | None:
     row = (
         conn.execute(
             text(
@@ -67,6 +71,10 @@ def get_last_run_snapshot(conn) -> LastRunSnapshot | None:
                 SELECT distance_meters, duration_seconds, avg_pace_sec_per_km,
                        avg_heart_rate, date
                 FROM strava_activities
+                WHERE distance_meters IS NOT NULL
+                  AND duration_seconds IS NOT NULL
+                  AND avg_pace_sec_per_km IS NOT NULL
+                  AND avg_heart_rate IS NOT NULL
                 ORDER BY date DESC
                 LIMIT 1
                 """
@@ -86,7 +94,7 @@ def get_last_run_snapshot(conn) -> LastRunSnapshot | None:
     )
 
 
-def get_next_session_snapshot(conn) -> NextSessionSnapshot | None:
+def get_next_session_snapshot(conn: Connection) -> NextSessionSnapshot | None:
     row = (
         conn.execute(
             text(
@@ -108,6 +116,7 @@ def get_next_session_snapshot(conn) -> NextSessionSnapshot | None:
 
 
 def get_dashboard_summary() -> DashboardSummary:
+    """Fetch the latest Whoop, run, and next session data in a single DB round-trip."""
     with get_connection() as conn:
         return DashboardSummary(
             whoop=get_whoop_snapshot(conn),
