@@ -103,3 +103,16 @@ class IngestionLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class GoogleCalendarRunnaSession(Base):
+    __tablename__ = "google_calendar_runna_sessions"
+
+    google_event_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    runna_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
