@@ -59,7 +59,7 @@ def run(source_name: str) -> dict:
     """Run incremental ingestion for one source using the watermark from ingestion_log.
 
     Args:
-        source_name: "strava" or "whoop"
+        source_name: "strava", "whoop", or "google_calendar"
 
     Returns:
         dict with records_fetched, records_inserted, records_skipped

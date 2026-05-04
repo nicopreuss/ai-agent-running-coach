@@ -45,3 +45,16 @@ def test_ingest_strava_returns_500_on_pipeline_failure():
 
     assert response.status_code == 500
     assert "API down" in response.json()["detail"]
+
+
+def test_ingest_google_calendar_returns_ok():
+    result = {"records_fetched": 5, "records_inserted": 3, "records_skipped": 2}
+    with patch("ingestion.pipeline.run", return_value=result):
+        with TestClient(app) as client:
+            response = client.post("/ingest/google_calendar")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["source"] == "google_calendar"
+    assert data["records_inserted"] == 3
