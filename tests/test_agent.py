@@ -4,50 +4,65 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-
-def test_run_returns_response_dict() -> None:
-    """agent.run() should return a dict with response and tools_used keys."""
-    mock_executor = MagicMock()
-    mock_executor.invoke.return_value = {"output": "test response", "intermediate_steps": []}
-
-    with patch("agent.agent._agent", mock_executor):
-        from agent.agent import run
-        result = run("test query")
-
-    assert result == {"response": "test response", "tools_used": []}
-    mock_executor.invoke.assert_called_once_with({"input": "test query"})
+from agent.agent import run
 
 
-def test_run_extracts_tool_names_from_intermediate_steps() -> None:
-    """agent.run() should pull tool names from each AgentAction in intermediate_steps."""
-    action_a = MagicMock()
-    action_a.tool = "refresh_data"
-    action_b = MagicMock()
-    action_b.tool = "get_recent_stats"
+def _make_ai_msg(content: str, tool_calls: list | None = None) -> MagicMock:
+    msg = MagicMock()
+    msg.type = "ai"
+    msg.content = content
+    msg.tool_calls = tool_calls or []
+    return msg
 
-    mock_executor = MagicMock()
-    mock_executor.invoke.return_value = {
-        "output": "Here is your summary.",
-        "intermediate_steps": [
-            (action_a, "Strava: already up to date."),
-            (action_b, "You ran 3 times last week."),
-        ],
+
+def _make_tool_msg(content: str) -> MagicMock:
+    msg = MagicMock()
+    msg.type = "tool"
+    msg.content = content
+    msg.tool_calls = []
+    return msg
+
+
+def test_run_returns_response_and_empty_tools_used() -> None:
+    """run() returns response text and empty tools_used when no tools are called."""
+    mock_agent = MagicMock()
+    mock_agent.invoke.return_value = {
+        "messages": [_make_ai_msg("Hello! How can I help?")]
     }
 
-    with patch("agent.agent._agent", mock_executor):
-        from agent.agent import run
-        result = run("How was my week?")
+    with patch("agent.agent._agent", mock_agent):
+        result = run("hello")
 
-    assert result["response"] == "Here is your summary."
-    assert result["tools_used"] == ["refresh_data", "get_recent_stats"]
+    assert result == {"response": "Hello! How can I help?", "tools_used": []}
+    mock_agent.invoke.assert_called_once()
+
+
+def test_run_extracts_tool_names_from_tool_calls() -> None:
+    """run() reads tool names from tool_calls on AI messages."""
+    ai_with_tool = _make_ai_msg(
+        content="",
+        tool_calls=[{"name": "refresh_data", "args": {"source": "all"}, "id": "call_1"}],
+    )
+    tool_result = _make_tool_msg("Strava: already up to date.")
+    ai_final = _make_ai_msg("Your data is up to date.")
+
+    mock_agent = MagicMock()
+    mock_agent.invoke.return_value = {
+        "messages": [ai_with_tool, tool_result, ai_final]
+    }
+
+    with patch("agent.agent._agent", mock_agent):
+        result = run("refresh my data")
+
+    assert result["response"] == "Your data is up to date."
+    assert result["tools_used"] == ["refresh_data"]
 
 
 def test_run_reraises_on_failure() -> None:
-    """agent.run() should re-raise exceptions raised by the executor."""
-    mock_executor = MagicMock()
-    mock_executor.invoke.side_effect = RuntimeError("LLM unavailable")
+    """run() re-raises exceptions raised by the agent."""
+    mock_agent = MagicMock()
+    mock_agent.invoke.side_effect = RuntimeError("LLM unavailable")
 
-    with patch("agent.agent._agent", mock_executor):
-        from agent.agent import run
+    with patch("agent.agent._agent", mock_agent):
         with pytest.raises(RuntimeError, match="LLM unavailable"):
             run("failing query")
