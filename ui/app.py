@@ -15,15 +15,18 @@ st.title("Running Coach")
 with st.sidebar:
     st.header("Data")
     if st.button("Refresh All", use_container_width=True):
-        with st.spinner("Syncing Whoop and Strava..."):
+        with st.spinner("Syncing Whoop, Strava, and Google Calendar..."):
             try:
                 whoop_res = requests.post(f"{_API_BASE_URL}/ingest/whoop", timeout=60)
                 strava_res = requests.post(f"{_API_BASE_URL}/ingest/strava", timeout=60)
+                gcal_res = requests.post(f"{_API_BASE_URL}/ingest/google_calendar", timeout=60)
                 whoop_res.raise_for_status()
                 strava_res.raise_for_status()
+                gcal_res.raise_for_status()
                 total = (
                     whoop_res.json()["records_inserted"]
                     + strava_res.json()["records_inserted"]
+                    + gcal_res.json()["records_inserted"]
                 )
                 st.success(f"Synced — {total} new record{'s' if total != 1 else ''}.")
             except requests.RequestException as exc:

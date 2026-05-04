@@ -76,3 +76,23 @@ def test_run_raises_for_unknown_source():
     with patch("ingestion.pipeline._read_watermark", return_value=None):
         with pytest.raises(ValueError, match="unknown_source"):
             run("unknown_source")
+
+
+def test_run_google_calendar_returns_correct_stats():
+    mock_source = MagicMock()
+    mock_source.fetch.return_value = [{"id": "evt1"}, {"id": "evt2"}]
+    mock_source.normalize.return_value = [
+        {"google_event_id": "evt1"},
+        {"google_event_id": "evt2"},
+    ]
+    mock_source.upsert.return_value = 2
+
+    with patch("ingestion.pipeline._read_watermark", return_value=None), \
+         patch("ingestion.pipeline.GoogleCalendarSource", return_value=mock_source), \
+         patch("ingestion.pipeline._write_log") as mock_log:
+        result = run("google_calendar")
+
+    assert result == {"records_fetched": 2, "records_inserted": 2, "records_skipped": 0}
+    mock_log.assert_called_once_with(
+        "google_calendar", IngestionStatus.success, 2, 2, 0, error=None
+    )

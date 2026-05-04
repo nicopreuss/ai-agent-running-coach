@@ -27,6 +27,12 @@ async def lifespan(app: FastAPI):
         id="strava_daily",
         replace_existing=True,
     )
+    _scheduler.add_job(
+        lambda: pipeline.run("google_calendar"),
+        CronTrigger(hour=12, minute=0, timezone="Europe/Paris"),
+        id="google_calendar_daily",
+        replace_existing=True,
+    )
     _scheduler.start()
     yield
     _scheduler.shutdown()
@@ -86,3 +92,15 @@ def ingest_strava() -> IngestResponse:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return IngestResponse(status="ok", source="strava", records_inserted=result["records_inserted"])
+
+
+@app.post("/ingest/google_calendar", response_model=IngestResponse)
+def ingest_google_calendar() -> IngestResponse:
+    """Trigger an immediate Google Calendar ingestion run."""
+    try:
+        result = pipeline.run("google_calendar")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return IngestResponse(
+        status="ok", source="google_calendar", records_inserted=result["records_inserted"]
+    )
