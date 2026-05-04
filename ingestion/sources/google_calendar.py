@@ -6,7 +6,10 @@ import time
 from datetime import date, datetime, timedelta, timezone
 
 import requests
+from sqlalchemy.dialects.postgresql import insert
 
+from db.client import get_connection
+from db.models import GoogleCalendarRunnaSession
 from ingestion.sources.base import DataSource
 
 _RUNNA_URL_RE = re.compile(r"https://club\.runna\.com\S+")
@@ -110,4 +113,16 @@ class GoogleCalendarSource(DataSource):
         return records
 
     def upsert(self, records: list[dict]) -> int:
-        raise NotImplementedError
+        """Insert Runna sessions, skipping any that already exist (dedup on google_event_id)."""
+        if not records:
+            return 0
+
+        with get_connection() as conn:
+            stmt = (
+                insert(GoogleCalendarRunnaSession)
+                .values(records)
+                .on_conflict_do_nothing(index_elements=["google_event_id"])
+            )
+            result = conn.execute(stmt)
+            conn.commit()
+            return result.rowcount

@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import insert
 from db.client import get_connection
 from db.models import IngestionLog, IngestionSource, IngestionStatus
 from ingestion.sources.base import DataSource
+from ingestion.sources.google_calendar import GoogleCalendarSource
 from ingestion.sources.strava import StravaSource
 from ingestion.sources.whoop import WhoopSource
 
@@ -74,6 +75,8 @@ def run(source_name: str) -> dict:
     elif source_name == "whoop":
         start_date = watermark.strftime("%Y-%m-%dT%H:%M:%S.000Z") if watermark else None
         source = WhoopSource(start_date=start_date)
+    elif source_name == "google_calendar":
+        source = GoogleCalendarSource()
     else:
         raise ValueError(f"Unknown source: {source_name!r}")
 
