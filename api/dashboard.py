@@ -27,6 +27,7 @@ class LastRunSnapshot(BaseModel):
 class NextSessionSnapshot(BaseModel):
     title: str
     date: datetime.date
+    description: str | None
 
 
 class DashboardSummary(BaseModel):
@@ -99,7 +100,7 @@ def get_next_session_snapshot(conn: Connection) -> NextSessionSnapshot | None:
         conn.execute(
             text(
                 """
-                SELECT title, date
+                SELECT title, date, description
                 FROM google_calendar_runna_sessions
                 WHERE date >= CURRENT_DATE
                 ORDER BY date ASC
@@ -112,7 +113,7 @@ def get_next_session_snapshot(conn: Connection) -> NextSessionSnapshot | None:
     )
     if row is None:
         return None
-    return NextSessionSnapshot(title=row["title"], date=row["date"])
+    return NextSessionSnapshot(title=row["title"], date=row["date"], description=row["description"])
 
 
 def get_dashboard_summary() -> DashboardSummary:

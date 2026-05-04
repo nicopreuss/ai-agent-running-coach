@@ -95,6 +95,8 @@ def _render_dashboard() -> None:
             f' · {_days_label(session_date)}'
         )
         st.markdown(f'**{next_session["title"]}**')
+        if next_session.get("description"):
+            st.caption(next_session["description"])
     else:
         st.caption("No upcoming sessions.")
 

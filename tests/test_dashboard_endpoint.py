@@ -79,6 +79,7 @@ def test_get_next_session_snapshot_returns_next_upcoming():
     data = {
         "title": "Fast 8-4-2s · 8.1km",
         "date": datetime.date(2026, 5, 6),
+        "description": "Intervals session with warmup and cooldown",
     }
     conn = MagicMock()
     conn.execute.return_value.mappings.return_value.first.return_value = _mock_row(data)
@@ -88,6 +89,7 @@ def test_get_next_session_snapshot_returns_next_upcoming():
     assert isinstance(result, NextSessionSnapshot)
     assert result.title == "Fast 8-4-2s · 8.1km"
     assert result.date == datetime.date(2026, 5, 6)
+    assert result.description == "Intervals session with warmup and cooldown"
 
 
 def test_get_next_session_snapshot_returns_none_when_no_data():
@@ -111,7 +113,9 @@ def test_get_dashboard_summary_assembles_all_sections():
         avg_heart_rate=148.0,
         date=datetime.date(2026, 5, 4),
     )
-    session = NextSessionSnapshot(title="Fast 8-4-2s · 8.1km", date=datetime.date(2026, 5, 6))
+    session = NextSessionSnapshot(
+        title="Fast 8-4-2s · 8.1km", date=datetime.date(2026, 5, 6), description=None
+    )
 
     mock_conn = MagicMock()
     with patch("api.dashboard.get_connection") as mock_get_conn:
@@ -157,7 +161,9 @@ def test_dashboard_summary_endpoint_returns_ok():
         avg_heart_rate=148.0,
         date=datetime.date(2026, 5, 4),
     )
-    session = NextSessionSnapshot(title="Fast 8-4-2s · 8.1km", date=datetime.date(2026, 5, 6))
+    session = NextSessionSnapshot(
+        title="Fast 8-4-2s · 8.1km", date=datetime.date(2026, 5, 6), description=None
+    )
     summary = DashboardSummary(whoop=whoop, last_run=run, next_session=session)
 
     with patch("api.main.get_dashboard_summary", return_value=summary):
