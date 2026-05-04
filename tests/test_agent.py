@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from agent.agent import run
+
 
 def _make_ai_msg(content: str, tool_calls: list | None = None) -> MagicMock:
     msg = MagicMock()
@@ -29,7 +31,6 @@ def test_run_returns_response_and_empty_tools_used() -> None:
     }
 
     with patch("agent.agent._agent", mock_agent):
-        from agent.agent import run
         result = run("hello")
 
     assert result == {"response": "Hello! How can I help?", "tools_used": []}
@@ -51,7 +52,6 @@ def test_run_extracts_tool_names_from_tool_calls() -> None:
     }
 
     with patch("agent.agent._agent", mock_agent):
-        from agent.agent import run
         result = run("refresh my data")
 
     assert result["response"] == "Your data is up to date."
@@ -64,6 +64,5 @@ def test_run_reraises_on_failure() -> None:
     mock_agent.invoke.side_effect = RuntimeError("LLM unavailable")
 
     with patch("agent.agent._agent", mock_agent):
-        from agent.agent import run
         with pytest.raises(RuntimeError, match="LLM unavailable"):
             run("failing query")

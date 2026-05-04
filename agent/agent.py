@@ -54,7 +54,7 @@ def run(query: str) -> dict[str, Any]:
         tools_used = [
             tc["name"]
             for msg in result["messages"]
-            if hasattr(msg, "tool_calls")
+            if msg.type == "ai"
             for tc in (msg.tool_calls or [])
         ]
         final = next(
