@@ -34,7 +34,7 @@ Not production-grade. Do not over-engineer. Prefer simple and explicit over clev
 | Package manager | Poetry |
 | Database | Postgres via Supabase (free tier) |
 | ORM | SQLAlchemy 2.0 |
-| Agent framework | LangChain (ReAct agent) |
+| Agent framework | LangGraph (create_react_agent + MemorySaver) |
 | LLM | OpenAI GPT-4o |
 | API backend | FastAPI |
 | Frontend | Streamlit (fast MVP) |
