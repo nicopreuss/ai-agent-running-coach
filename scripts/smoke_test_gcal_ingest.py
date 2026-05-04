@@ -1,9 +1,9 @@
 """Smoke test: fetch and display Runna sessions from Google Calendar."""
 
 from ingestion.sources.google_calendar import (
-    GoogleCalendarSource,
     _PLAN_END_DATE,
     _PLAN_START_DATE,
+    GoogleCalendarSource,
 )
 
 
