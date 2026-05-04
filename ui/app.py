@@ -88,11 +88,13 @@ def _render_dashboard() -> None:
     st.divider()
 
     # ── Row 3: Next Session ───────────────────────────────────────────────────
-    st.caption("NEXT SESSION")
     if next_session:
         session_date = datetime.date.fromisoformat(next_session["date"])
+        st.caption(
+            f'NEXT SESSION · {session_date.strftime("%a %d %b").upper()}'
+            f' · {_days_label(session_date)}'
+        )
         st.markdown(f'**{next_session["title"]}**')
-        st.caption(f'{session_date.strftime("%a %d %b")} · {_days_label(session_date)}')
     else:
         st.caption("No upcoming sessions.")
 
