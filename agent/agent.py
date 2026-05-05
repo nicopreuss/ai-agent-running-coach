@@ -11,6 +11,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 
+from agent.memory import load_athlete_context
 from agent.prompts import SYSTEM_PROMPT
 from agent.tools import get_tools
 
@@ -24,6 +25,9 @@ _THREAD = {"configurable": {"thread_id": _SESSION_ID}}
 
 def build_agent():
     """Instantiate and return the LangGraph ReAct agent with memory."""
+    athlete_context = load_athlete_context()
+    full_prompt = f"{athlete_context}\n\n---\n\n{SYSTEM_PROMPT}"
+
     llm = ChatOpenAI(
         model=os.environ["OPENAI_MODEL"],
         temperature=0,
@@ -33,7 +37,7 @@ def build_agent():
     return create_react_agent(
         llm,
         tools=get_tools(),
-        prompt=SystemMessage(content=SYSTEM_PROMPT),
+        prompt=SystemMessage(content=full_prompt),
         checkpointer=checkpointer,
     )
 
