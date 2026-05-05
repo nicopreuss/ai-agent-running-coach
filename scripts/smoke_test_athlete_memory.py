@@ -28,7 +28,8 @@ def main() -> None:
     print("4. Reloading context to verify both writes are visible...")
     context = load_athlete_context()
     smoke_ok = "[SMOKE TEST]" in context
-    print("   PASS — smoke test entries found in context." if smoke_ok else "   FAIL — smoke test entries NOT found in context.")
+    status = "PASS" if smoke_ok else "FAIL"
+    print(f"   {status} — smoke test entries {'found' if smoke_ok else 'NOT found'} in context.")
     print()
     print(context[:1200] if len(context) > 1200 else context)
     print("\n=== Done ===")
