@@ -69,7 +69,7 @@ Not production-grade. Do not over-engineer. Prefer simple and explicit over clev
 
 ---
 
-## Database schema (5 tables)
+## Database schema (7 tables)
 
 ### `whoop_recovery_daily`
 One row per calendar date. Morning health snapshot from Whoop.
@@ -174,6 +174,29 @@ One row per pipeline run per source. Provides watermark for incremental fetches.
 | error_message | TEXT | nullable |
 | created_at | TIMESTAMPTZ | |
 
+### `athlete_profile`
+One row per user. Permanent facts about the athlete, injected into every system prompt.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID PK | |
+| user_id | TEXT UNIQUE | "default" for single-user |
+| content | TEXT | nullable, append-only timestamped entries |
+| updated_at | TIMESTAMPTZ | |
+
+### `session_notes`
+One row per user per date. Running observations from the current coaching session.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | UUID PK | |
+| user_id | TEXT | FK-style, "default" for single-user |
+| date | DATE | |
+| content | TEXT | nullable, append-only timestamped entries |
+| updated_at | TIMESTAMPTZ | |
+
+Unique constraint on `(user_id, date)`.
+
 ---
 
 ## Ingestion pipeline
@@ -200,8 +223,8 @@ One row per pipeline run per source. Provides watermark for incremental fetches.
 
 ## Agent layer
 
-LangGraph ReAct agent backed by three tools. Each tool runs SQL against Postgres and returns
-structured results the agent cites in its response.
+LangGraph ReAct agent backed by five tools. Data tools run SQL against Postgres; memory tools
+read/write the two-tier athlete memory system.
 
 ### Tool 1 — `get_recent_stats`
 Answers exploratory questions about recent performance. Accepts a lookback window in days.
@@ -214,6 +237,20 @@ Example: "When my recovery is above 70%, how much faster do I run?", "What's my 
 ### Tool 3 — `get_upcoming_sessions`
 Reads `planned_sessions` for a date range. Enables forward-looking reasoning.
 Example: "What does my training week look like?", "I have low recovery — what's my session tomorrow?"
+
+### Tool 4 — `update_athlete_profile`
+Appends a timestamped fact to `athlete_profile`. Called when the athlete says "remember that..." or
+explicitly asks to save something permanently.
+
+### Tool 5 — `add_session_note`
+Appends a timestamped observation to today's `session_notes` row. Called proactively when the
+athlete mentions anything worth carrying into future sessions (fatigue, injuries, goal hints).
+
+### Two-tier memory system
+- **Tier 1 (`athlete_profile`):** Permanent facts always injected into the system prompt.
+- **Tier 2 (`session_notes`):** Daily observations — today and yesterday auto-loaded.
+- On first run (empty profile), the agent triggers onboarding and collects 6 structured questions
+  before saving them to the profile.
 
 ---
 

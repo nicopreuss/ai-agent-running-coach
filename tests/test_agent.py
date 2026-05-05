@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agent.agent import run
+from agent.agent import build_agent, run
 
 
 def _make_ai_msg(content: str, tool_calls: list | None = None) -> MagicMock:
@@ -66,3 +66,25 @@ def test_run_reraises_on_failure() -> None:
     with patch("agent.agent._agent", mock_agent):
         with pytest.raises(RuntimeError, match="LLM unavailable"):
             run("failing query")
+
+
+def test_build_agent_injects_athlete_context() -> None:
+    """build_agent() prepends athlete context to the system prompt."""
+    mock_context = "## Athlete Profile\nGoal: Paris Marathon sub-4h"
+    captured_prompts = []
+
+    def capture_create(llm, **kwargs):
+        captured_prompts.append(kwargs["prompt"])
+        return MagicMock()
+
+    with patch.dict("os.environ", {"OPENAI_MODEL": "gpt-4o"}):
+        with patch("agent.agent.load_athlete_context", return_value=mock_context):
+            with patch("agent.agent.ChatOpenAI"):
+                with patch("agent.agent.MemorySaver"):
+                    with patch("agent.agent.create_react_agent", side_effect=capture_create):
+                        build_agent()
+
+    assert len(captured_prompts) == 1
+    assert "Athlete Profile" in captured_prompts[0].content
+    assert "sub-4h" in captured_prompts[0].content
+    assert "personal AI running coach" in captured_prompts[0].content

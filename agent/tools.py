@@ -5,6 +5,9 @@ import os
 import requests
 from langchain_core.tools import tool
 
+from agent.memory import add_session_note as _add_session_note
+from agent.memory import update_athlete_profile as _update_athlete_profile
+
 _API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000")
 
 _SOURCE_LABELS = {
@@ -46,6 +49,39 @@ def refresh_data(source: str) -> str:
     return " ".join(summaries)
 
 
+@tool
+def update_athlete_profile(fact: str) -> str:
+    """Save a permanent fact to the athlete's profile.
+
+    Call when the athlete explicitly says "remember that..." or asks you to save
+    something to their profile. The fact is timestamped and appended.
+
+    Args:
+        fact: The fact or piece of information to save permanently.
+
+    Returns:
+        Confirmation that the fact was saved.
+    """
+    return _update_athlete_profile(fact)
+
+
+@tool
+def add_session_note(note: str) -> str:
+    """Record a noteworthy observation from the current session.
+
+    Call proactively when the athlete mentions something useful for future
+    conversations: training feelings, fatigue, injuries, goal hints, or any
+    relevant observation. The note is timestamped and appended to today's log.
+
+    Args:
+        note: The observation to record.
+
+    Returns:
+        Confirmation that the note was saved.
+    """
+    return _add_session_note(note)
+
+
 def get_tools() -> list:
     """Return the list of tools registered with the agent."""
-    return [refresh_data]
+    return [refresh_data, update_athlete_profile, add_session_note]
