@@ -134,10 +134,7 @@ def test_load_athlete_context_omits_notes_section_when_no_notes() -> None:
 # --- update_athlete_profile ---
 
 def test_update_athlete_profile_returns_confirmation() -> None:
-    mock_conn = _make_conn_mock([
-        MagicMock(**{"fetchone.return_value": None}),  # read: no existing profile
-        MagicMock(),                                   # write: upsert
-    ])
+    mock_conn = _make_conn_mock([MagicMock()])  # single atomic upsert
 
     with _patch_conn(mock_conn):
         from agent.memory import update_athlete_profile
@@ -148,13 +145,7 @@ def test_update_athlete_profile_returns_confirmation() -> None:
 
 
 def test_update_athlete_profile_commits_on_existing_profile() -> None:
-    existing = MagicMock()
-    existing.content = "- [2026-01-01 09:00 UTC] Goal: sub-4h marathon"
-
-    mock_conn = _make_conn_mock([
-        MagicMock(**{"fetchone.return_value": existing}),
-        MagicMock(),
-    ])
+    mock_conn = _make_conn_mock([MagicMock()])  # single atomic upsert
 
     with _patch_conn(mock_conn):
         from agent.memory import update_athlete_profile
@@ -167,10 +158,7 @@ def test_update_athlete_profile_commits_on_existing_profile() -> None:
 # --- add_session_note ---
 
 def test_add_session_note_returns_confirmation() -> None:
-    mock_conn = _make_conn_mock([
-        MagicMock(**{"fetchone.return_value": None}),  # read: no existing note today
-        MagicMock(),                                   # write: upsert
-    ])
+    mock_conn = _make_conn_mock([MagicMock()])  # single atomic upsert
 
     with _patch_conn(mock_conn):
         from agent.memory import add_session_note

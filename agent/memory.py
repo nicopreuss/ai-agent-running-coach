@@ -53,12 +53,12 @@ def load_athlete_context(user_id: str = _DEFAULT_USER) -> str:
             .order_by(SessionNote.date.desc())
         ).fetchall()
 
-    parts = [f"## Athlete Profile\n{profile_content}"]
-    if note_rows:
-        parts.append("## Recent Session Notes")
-        for row in note_rows:
-            if row.content:
-                parts.append(row.content)
+        parts = [f"## Athlete Profile\n{profile_content}"]
+        if note_rows:
+            parts.append("## Recent Session Notes")
+            for row in note_rows:
+                if row.content:
+                    parts.append(row.content)
 
     return "\n\n".join(parts)
 
@@ -69,18 +69,15 @@ def update_athlete_profile(fact: str, user_id: str = _DEFAULT_USER) -> str:
     entry = f"\n- [{timestamp}] {fact}"
 
     with get_connection() as conn:
-        row = conn.execute(
-            select(AthleteProfile.content).where(AthleteProfile.user_id == user_id)
-        ).fetchone()
-        current = row.content if row and row.content else ""
-        new_content = current + entry
-
         conn.execute(
             pg_insert(AthleteProfile)
-            .values(user_id=user_id, content=new_content, updated_at=func.now())
+            .values(user_id=user_id, content=entry, updated_at=func.now())
             .on_conflict_do_update(
                 index_elements=["user_id"],
-                set_={"content": new_content, "updated_at": func.now()},
+                set_={
+                    "content": func.coalesce(AthleteProfile.content, "") + entry,
+                    "updated_at": func.now(),
+                },
             )
         )
         conn.commit()
@@ -91,24 +88,20 @@ def update_athlete_profile(fact: str, user_id: str = _DEFAULT_USER) -> str:
 def add_session_note(note: str, user_id: str = _DEFAULT_USER) -> str:
     """Append *note* to today's session note row in the DB."""
     today = date.today()
+    # date is implicit in session_notes.date column, so time-only timestamp suffices
     timestamp = datetime.now(timezone.utc).strftime("%H:%M UTC")
     entry = f"\n- [{timestamp}] {note}"
 
     with get_connection() as conn:
-        row = conn.execute(
-            select(SessionNote.content)
-            .where(SessionNote.user_id == user_id)
-            .where(SessionNote.date == today)
-        ).fetchone()
-        current = row.content if row and row.content else ""
-        new_content = current + entry
-
         conn.execute(
             pg_insert(SessionNote)
-            .values(user_id=user_id, date=today, content=new_content, updated_at=func.now())
+            .values(user_id=user_id, date=today, content=entry, updated_at=func.now())
             .on_conflict_do_update(
                 index_elements=["user_id", "date"],
-                set_={"content": new_content, "updated_at": func.now()},
+                set_={
+                    "content": func.coalesce(SessionNote.content, "") + entry,
+                    "updated_at": func.now(),
+                },
             )
         )
         conn.commit()
