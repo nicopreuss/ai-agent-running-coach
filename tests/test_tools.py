@@ -14,3 +14,15 @@ def test_get_tools_contains_refresh_data() -> None:
     """get_tools() should include the refresh_data tool."""
     tools = get_tools()
     assert refresh_data in tools
+
+
+def test_get_tools_contains_update_athlete_profile() -> None:
+    tools = get_tools()
+    tool_names = [t.name for t in tools]
+    assert "update_athlete_profile" in tool_names
+
+
+def test_get_tools_contains_add_session_note() -> None:
+    tools = get_tools()
+    tool_names = [t.name for t in tools]
+    assert "add_session_note" in tool_names
