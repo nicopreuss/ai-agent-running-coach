@@ -277,6 +277,17 @@ Two-panel Streamlit app:
 
 ## Development workflow
 
+### Branch discipline (mandatory)
+Every feature gets its own branch and PR. Never bundle two features in one branch.
+
+Before starting any implementation, run this checklist and state the results out loud:
+1. What is the last branch? Was its PR merged?
+2. Is `main` clean (`git log origin/main..HEAD` should be empty after checkout)?
+3. Create a new branch off `main`: `git checkout main && git pull && git checkout -b feat/<name>`
+
+Do not proceed to writing a plan or writing code until these three steps are confirmed.
+
+### Smoke tests
 When implementing a meaningful new feature, create a smoke test script in `scripts/smoke_test_<feature>.py` that exercises the feature and prints a human-readable summary to the terminal. Run it with `poetry run python -m scripts.smoke_test_<feature>`. Smoke tests are manual-only and are not part of the automated test suite.
 
 ---
