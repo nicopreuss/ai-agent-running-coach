@@ -77,11 +77,12 @@ def test_build_agent_injects_athlete_context() -> None:
         captured_prompts.append(kwargs["prompt"])
         return MagicMock()
 
-    with patch("agent.agent.load_athlete_context", return_value=mock_context):
-        with patch("agent.agent.ChatOpenAI"):
-            with patch("agent.agent.MemorySaver"):
-                with patch("agent.agent.create_react_agent", side_effect=capture_create):
-                    build_agent()
+    with patch.dict("os.environ", {"OPENAI_MODEL": "gpt-4o"}):
+        with patch("agent.agent.load_athlete_context", return_value=mock_context):
+            with patch("agent.agent.ChatOpenAI"):
+                with patch("agent.agent.MemorySaver"):
+                    with patch("agent.agent.create_react_agent", side_effect=capture_create):
+                        build_agent()
 
     assert len(captured_prompts) == 1
     assert "Athlete Profile" in captured_prompts[0].content
