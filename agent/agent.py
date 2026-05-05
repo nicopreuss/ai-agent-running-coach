@@ -52,13 +52,16 @@ def run(query: str) -> dict[str, Any]:
         # Context is frozen at first call; restart the process to pick up profile changes.
         _agent = build_agent()
     try:
+        prior_state = _agent.get_state(config=_THREAD)
+        prior_count = len(prior_state.values.get("messages", [])) if prior_state.values else 0
         result = _agent.invoke(
             {"messages": [HumanMessage(content=query)]},
             config=_THREAD,
         )
+        new_messages = result["messages"][prior_count:]
         tools_used = [
             tc["name"]
-            for msg in result["messages"]
+            for msg in new_messages
             if msg.type == "ai"
             for tc in (msg.tool_calls or [])
         ]
