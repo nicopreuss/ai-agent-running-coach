@@ -26,7 +26,7 @@ _THREAD = {"configurable": {"thread_id": _SESSION_ID}}
 def build_agent():
     """Instantiate and return the LangGraph ReAct agent with memory."""
     athlete_context = load_athlete_context()
-    full_prompt = f"{athlete_context}\n\n---\n\n{SYSTEM_PROMPT}"
+    full_prompt = f"{SYSTEM_PROMPT}\n\n---\n\n{athlete_context}"
 
     llm = ChatOpenAI(
         model=os.environ["OPENAI_MODEL"],
