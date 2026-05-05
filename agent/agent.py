@@ -49,6 +49,7 @@ def run(query: str) -> dict[str, Any]:
     """Invoke the agent with *query* and return response text plus tool names used."""
     global _agent
     if _agent is None:
+        # Context is frozen at first call; restart the process to pick up profile changes.
         _agent = build_agent()
     try:
         result = _agent.invoke(

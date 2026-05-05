@@ -86,3 +86,4 @@ def test_build_agent_injects_athlete_context() -> None:
     assert len(captured_prompts) == 1
     assert "Athlete Profile" in captured_prompts[0].content
     assert "sub-4h" in captured_prompts[0].content
+    assert "personal AI running coach" in captured_prompts[0].content
