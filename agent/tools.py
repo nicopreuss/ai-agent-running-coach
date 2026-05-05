@@ -58,6 +58,9 @@ def update_athlete_profile(fact: str) -> str:
 
     Args:
         fact: The fact or piece of information to save permanently.
+
+    Returns:
+        Confirmation that the fact was saved.
     """
     return _update_athlete_profile(fact)
 
@@ -68,10 +71,13 @@ def add_session_note(note: str) -> str:
 
     Call proactively when the athlete mentions something useful for future
     conversations: training feelings, fatigue, injuries, goal hints, or any
-    relevant observation. Notes are timestamped and stored for today and yesterday.
+    relevant observation. The note is timestamped and appended to today's log.
 
     Args:
         note: The observation to record.
+
+    Returns:
+        Confirmation that the note was saved.
     """
     return _add_session_note(note)
 
