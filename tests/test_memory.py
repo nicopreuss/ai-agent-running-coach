@@ -166,3 +166,10 @@ def test_add_session_note_returns_confirmation() -> None:
 
     assert "Session note saved" in result
     mock_conn.commit.assert_called_once()
+
+
+def test_system_prompt_includes_memory_tool_instructions() -> None:
+    from agent.prompts import SYSTEM_PROMPT
+    assert "update_athlete_profile" in SYSTEM_PROMPT
+    assert "add_session_note" in SYSTEM_PROMPT
+    assert "remember that" in SYSTEM_PROMPT.lower()
