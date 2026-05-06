@@ -245,3 +245,32 @@ def test_recovery_colour_red():
     from ui.app import _recovery_colour
     assert _recovery_colour(0.0) == "#f87171"
     assert _recovery_colour(39.9) == "#f87171"
+
+
+def test_get_weekly_ef_trend_returns_data():
+    from api.dashboard import WeeklyEFPoint, get_weekly_ef_trend
+
+    row1 = _mock_row({"week_start": datetime.date(2026, 2, 3), "weekly_ef": 1.42})
+    row2 = _mock_row({"week_start": datetime.date(2026, 2, 10), "weekly_ef": 1.45})
+    conn = MagicMock()
+    conn.execute.return_value.mappings.return_value.all.return_value = [row1, row2]
+
+    result = get_weekly_ef_trend(conn)
+
+    assert len(result) == 2
+    assert isinstance(result[0], WeeklyEFPoint)
+    assert result[0].week_start == datetime.date(2026, 2, 3)
+    assert result[0].weekly_ef == 1.42
+    assert result[1].week_start == datetime.date(2026, 2, 10)
+    assert result[1].weekly_ef == 1.45
+
+
+def test_get_weekly_ef_trend_returns_empty_when_no_data():
+    from api.dashboard import get_weekly_ef_trend
+
+    conn = MagicMock()
+    conn.execute.return_value.mappings.return_value.all.return_value = []
+
+    result = get_weekly_ef_trend(conn)
+
+    assert result == []

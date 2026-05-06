@@ -37,6 +37,35 @@ class DashboardSummary(BaseModel):
     next_session: NextSessionSnapshot | None
 
 
+class WeeklyEFPoint(BaseModel):
+    week_start: datetime.date
+    weekly_ef: float
+
+
+def get_weekly_ef_trend(conn: Connection) -> list[WeeklyEFPoint]:
+    rows = (
+        conn.execute(
+            text(
+                """
+                SELECT
+                    DATE_TRUNC('week', date)::DATE AS week_start,
+                    SUM(efficiency_factor * duration_seconds) / SUM(duration_seconds) AS weekly_ef
+                FROM strava_activities
+                WHERE date >= CURRENT_DATE - INTERVAL '13 weeks'
+                  AND efficiency_factor IS NOT NULL
+                  AND duration_seconds IS NOT NULL
+                  AND duration_seconds > 0
+                GROUP BY DATE_TRUNC('week', date)
+                ORDER BY week_start ASC
+                """
+            )
+        )
+        .mappings()
+        .all()
+    )
+    return [WeeklyEFPoint(week_start=r["week_start"], weekly_ef=r["weekly_ef"]) for r in rows]
+
+
 def get_whoop_snapshot(conn: Connection) -> WhoopSnapshot | None:
     row = (
         conn.execute(
