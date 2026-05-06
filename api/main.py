@@ -8,7 +8,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 import agent.agent as agent_module
-from api.dashboard import DashboardSummary, get_dashboard_summary
+from api.dashboard import DashboardSummary, WeeklyEFPoint, get_dashboard_summary, get_weekly_ef_trend
+from db.client import get_connection
 from ingestion import pipeline
 
 _scheduler = BackgroundScheduler()
@@ -113,5 +114,15 @@ def dashboard_summary() -> DashboardSummary:
     """Return the latest Whoop snapshot, last run, and next planned session."""
     try:
         return get_dashboard_summary()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.get("/dashboard/weekly-ef", response_model=list[WeeklyEFPoint])
+def weekly_ef_endpoint() -> list[WeeklyEFPoint]:
+    """Return duration-weighted weekly EF for the last 13 weeks."""
+    try:
+        with get_connection() as conn:
+            return get_weekly_ef_trend(conn)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
