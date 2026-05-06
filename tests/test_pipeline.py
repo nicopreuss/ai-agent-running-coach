@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -96,3 +96,53 @@ def test_run_google_calendar_returns_correct_stats():
     mock_log.assert_called_once_with(
         "google_calendar", IngestionStatus.success, 2, 2, 0, error=None
     )
+
+
+def test_run_whoop_clamps_start_date_to_today_when_watermark_is_later_today():
+    """Watermark later in the day must be clamped to 00:00:00 today."""
+    today = date.today()
+    # Simulate a watermark set at 14:00 today (after this morning's cycle started)
+    watermark = datetime.combine(today, time(14, 0, 0)).replace(tzinfo=timezone.utc)
+    expected_start = datetime.combine(today, time.min).replace(tzinfo=timezone.utc)
+    expected_str = expected_start.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+    mock_source = MagicMock()
+    mock_source.fetch.return_value = []
+    mock_source.normalize.return_value = []
+    mock_source.upsert.return_value = 0
+    captured = {}
+
+    def capture(start_date=None):
+        captured["start_date"] = start_date
+        return mock_source
+
+    with patch("ingestion.pipeline._read_watermark", return_value=watermark), \
+         patch("ingestion.pipeline.WhoopSource", side_effect=capture), \
+         patch("ingestion.pipeline._write_log"):
+        run("whoop")
+
+    assert captured["start_date"] == expected_str
+
+
+def test_run_whoop_uses_watermark_unchanged_when_before_today():
+    """Watermark from a previous day must be used as-is (no clamping)."""
+    yesterday = date.today() - timedelta(days=1)
+    watermark = datetime.combine(yesterday, datetime.min.time()).replace(tzinfo=timezone.utc)
+    expected_str = watermark.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+    mock_source = MagicMock()
+    mock_source.fetch.return_value = []
+    mock_source.normalize.return_value = []
+    mock_source.upsert.return_value = 0
+    captured = {}
+
+    def capture(start_date=None):
+        captured["start_date"] = start_date
+        return mock_source
+
+    with patch("ingestion.pipeline._read_watermark", return_value=watermark), \
+         patch("ingestion.pipeline.WhoopSource", side_effect=capture), \
+         patch("ingestion.pipeline._write_log"):
+        run("whoop")
+
+    assert captured["start_date"] == expected_str

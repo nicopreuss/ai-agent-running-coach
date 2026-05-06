@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
 
 from sqlalchemy import desc, select
 from sqlalchemy.dialects.postgresql import insert
@@ -73,7 +73,13 @@ def run(source_name: str) -> dict:
         after_ts = int(watermark.timestamp()) if watermark else None
         source: DataSource = StravaSource(after_timestamp=after_ts)
     elif source_name == "whoop":
-        start_date = watermark.strftime("%Y-%m-%dT%H:%M:%S.000Z") if watermark else None
+        if watermark:
+            today_start = datetime.combine(date.today(), time.min).replace(tzinfo=timezone.utc)
+            effective = min(watermark, today_start)
+            # Whoop API expects second-level precision; milliseconds are always zero.
+            start_date = effective.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        else:
+            start_date = None
         source = WhoopSource(start_date=start_date)
     elif source_name == "google_calendar":
         source = GoogleCalendarSource()
