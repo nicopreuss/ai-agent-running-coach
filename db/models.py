@@ -45,6 +45,7 @@ class StravaActivity(Base):
     suffer_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     pr_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     perceived_effort: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    efficiency_factor: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
