@@ -205,3 +205,51 @@ def test_normalize_handles_missing_sleep():
     assert records[0]["sleep_performance_pct"] is None
     assert records[0]["sleep_duration_ms"] is None
     assert records[0]["recovery_score"] == 70.0
+
+
+def test_upsert_calls_on_conflict_do_update_for_daily_strain():
+    """upsert() must use on_conflict_do_update targeting daily_strain."""
+    from datetime import date
+    from unittest.mock import MagicMock, patch
+
+    from ingestion.sources.whoop import WhoopSource
+
+    source = WhoopSource()
+    records = [{"date": date.today(), "whoop_cycle_id": 1, "daily_strain": 12.3}]
+
+    mock_ins = MagicMock()
+    mock_ins.values.return_value = mock_ins
+    mock_ins.on_conflict_do_update.return_value = mock_ins
+    mock_ins.excluded.daily_strain = "excluded_daily_strain_sentinel"
+
+    mock_conn = MagicMock()
+    mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+    mock_conn.__exit__ = MagicMock(return_value=False)
+    mock_conn.execute.return_value.rowcount = 1
+
+    with patch("ingestion.sources.whoop.insert", return_value=mock_ins), \
+         patch("ingestion.sources.whoop.get_connection", return_value=mock_conn):
+        result = source.upsert(records)
+
+    mock_ins.on_conflict_do_update.assert_called_once()
+    kwargs = mock_ins.on_conflict_do_update.call_args.kwargs
+    assert kwargs["index_elements"] == ["whoop_cycle_id"]
+    assert "daily_strain" in kwargs["set_"]
+    assert kwargs.get("where") is not None
+    mock_conn.commit.assert_called_once()
+    assert result == 1
+
+
+def test_upsert_returns_zero_and_skips_db_for_empty_records():
+    """upsert([]) must return 0 without touching the database."""
+    from unittest.mock import patch
+
+    from ingestion.sources.whoop import WhoopSource
+
+    source = WhoopSource()
+
+    with patch("ingestion.sources.whoop.get_connection") as mock_get_conn:
+        result = source.upsert([])
+
+    assert result == 0
+    mock_get_conn.assert_not_called()
