@@ -226,25 +226,27 @@ Unique constraint on `(user_id, date)`.
 LangGraph ReAct agent backed by five tools. Data tools run SQL against Postgres; memory tools
 read/write the two-tier athlete memory system.
 
-### Tool 1 — `get_recent_stats`
-Answers exploratory questions about recent performance. Accepts a lookback window in days.
-Example: "Give me a summary of my last 2 weeks", "How many km did I run last month?"
+### Tool 1 — `get_training_and_recovery`
+Returns recent training and Whoop recovery data joined by date. Use for any question
+about runs, recovery scores, HRV, resting HR, sleep, strain, or the relationship
+between training and recovery. Accepts a lookback window in days (default 7, max 90).
 
-### Tool 2 — `analyze_performance_vs_recovery`
-Joins `activities` and `whoop_recovery_daily` on `date` to surface correlations.
-Example: "When my recovery is above 70%, how much faster do I run?", "What's my HR like after poor sleep?"
+### Tool 2 — `get_upcoming_sessions`
+Returns upcoming planned sessions from Google Calendar. Use for any question about
+the next session, weekly training plan, or what is scheduled on a specific date.
+Accepts a days-ahead window (default 7, max 90).
 
-### Tool 3 — `get_upcoming_sessions`
-Reads `planned_sessions` for a date range. Enables forward-looking reasoning.
-Example: "What does my training week look like?", "I have low recovery — what's my session tomorrow?"
+### Tool 3 — `refresh_data`
+Triggers an immediate ingestion run for a given source. Use when the user asks to
+refresh or pull the latest data.
 
 ### Tool 4 — `update_athlete_profile`
-Appends a timestamped fact to `athlete_profile`. Called when the athlete says "remember that..." or
-explicitly asks to save something permanently.
+Appends a timestamped fact to `athlete_profile`. Called when the athlete explicitly
+asks to save something permanently.
 
 ### Tool 5 — `add_session_note`
-Appends a timestamped observation to today's `session_notes` row. Called proactively when the
-athlete mentions anything worth carrying into future sessions (fatigue, injuries, goal hints).
+Appends a timestamped observation to today's `session_notes` row. Called proactively
+when the athlete mentions anything worth carrying into future sessions.
 
 ### Two-tier memory system
 - **Tier 1 (`athlete_profile`):** Permanent facts always injected into the system prompt.

@@ -9,7 +9,7 @@ from api.main import app
 
 def test_chat_returns_response_and_tools_used() -> None:
     """/chat should return response text and a list of tool names."""
-    mock_result = {"response": "You ran 3 times last week.", "tools_used": ["get_recent_stats"]}
+    mock_result = {"response": "You ran 3 times last week.", "tools_used": ["get_training_and_recovery"]}
 
     with patch("api.main.agent_module.run", return_value=mock_result):
         with TestClient(app) as client:
@@ -18,7 +18,7 @@ def test_chat_returns_response_and_tools_used() -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["response"] == "You ran 3 times last week."
-    assert data["tools_used"] == ["get_recent_stats"]
+    assert data["tools_used"] == ["get_training_and_recovery"]
 
 
 def test_chat_returns_empty_tools_when_none_used() -> None:
