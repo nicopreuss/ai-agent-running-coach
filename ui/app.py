@@ -105,6 +105,41 @@ def _render_dashboard() -> None:
     else:
         st.caption("No upcoming sessions.")
 
+    st.divider()
+
+    # ── Row 4: Weekly EF ──────────────────────────────────────────────────────
+    st.caption("WEEKLY EFFICIENCY FACTOR · LAST 3 MONTHS")
+    try:
+        resp = requests.get(f"{_API_BASE_URL}/dashboard/weekly-ef", timeout=10)
+        resp.raise_for_status()
+        points = resp.json()
+    except requests.RequestException as exc:
+        st.error(f"Could not load weekly EF: {exc}")
+        points = []
+
+    if points:
+        import altair as alt
+        import pandas as pd
+
+        df = pd.DataFrame(points)
+        df["week_start"] = pd.to_datetime(df["week_start"])
+        chart = (
+            alt.Chart(df)
+            .mark_line(color="#4ade80", point=alt.OverlayMarkDef(color="#4ade80", size=50))
+            .encode(
+                x=alt.X("week_start:T", title="Week", axis=alt.Axis(format="%b %d")),
+                y=alt.Y("weekly_ef:Q", title="EF", scale=alt.Scale(zero=False)),
+                tooltip=[
+                    alt.Tooltip("week_start:T", title="Week", format="%b %d"),
+                    alt.Tooltip("weekly_ef:Q", title="EF", format=".2f"),
+                ],
+            )
+            .properties(height=200)
+        )
+        st.altair_chart(chart, use_container_width=True)
+    else:
+        st.caption("No efficiency data yet.")
+
 
 def _render_chat() -> None:
     """Render the chat panel: session history as bubbles, tool chips, and the input box."""
