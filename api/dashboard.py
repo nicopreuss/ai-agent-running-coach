@@ -21,6 +21,7 @@ class LastRunSnapshot(BaseModel):
     duration_seconds: int
     avg_pace_sec_per_km: float
     avg_heart_rate: float
+    efficiency_factor: float | None = None
     date: datetime.date
 
 
@@ -70,7 +71,7 @@ def get_last_run_snapshot(conn: Connection) -> LastRunSnapshot | None:
             text(
                 """
                 SELECT distance_meters, duration_seconds, avg_pace_sec_per_km,
-                       avg_heart_rate, date
+                       avg_heart_rate, efficiency_factor, date
                 FROM strava_activities
                 WHERE distance_meters IS NOT NULL
                   AND duration_seconds IS NOT NULL
@@ -91,6 +92,7 @@ def get_last_run_snapshot(conn: Connection) -> LastRunSnapshot | None:
         duration_seconds=row["duration_seconds"],
         avg_pace_sec_per_km=row["avg_pace_sec_per_km"],
         avg_heart_rate=row["avg_heart_rate"],
+        efficiency_factor=row["efficiency_factor"],
         date=row["date"],
     )
 
