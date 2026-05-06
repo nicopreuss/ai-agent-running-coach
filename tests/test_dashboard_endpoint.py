@@ -54,6 +54,7 @@ def test_get_last_run_snapshot_converts_meters_to_km():
         "duration_seconds": 2712,
         "avg_pace_sec_per_km": 330.0,
         "avg_heart_rate": 148.0,
+        "efficiency_factor": 1.35,
         "date": datetime.date(2026, 5, 4),
     }
     conn = MagicMock()
@@ -66,6 +67,7 @@ def test_get_last_run_snapshot_converts_meters_to_km():
     assert result.duration_seconds == 2712
     assert result.avg_pace_sec_per_km == 330.0
     assert result.avg_heart_rate == 148.0
+    assert result.efficiency_factor == 1.35
 
 
 def test_get_last_run_snapshot_returns_none_when_no_data():
@@ -189,6 +191,40 @@ def test_dashboard_summary_endpoint_returns_nulls_when_empty():
     assert data["whoop"] is None
     assert data["last_run"] is None
     assert data["next_session"] is None
+
+
+def test_get_last_run_snapshot_includes_ef_when_present():
+    data = {
+        "distance_meters": 5000.0,
+        "duration_seconds": 1500,
+        "avg_pace_sec_per_km": 300.0,
+        "avg_heart_rate": 150.0,
+        "efficiency_factor": 1.33,
+        "date": datetime.date(2026, 5, 4),
+    }
+    conn = MagicMock()
+    conn.execute.return_value.mappings.return_value.first.return_value = _mock_row(data)
+
+    result = get_last_run_snapshot(conn)
+
+    assert result.efficiency_factor == 1.33
+
+
+def test_get_last_run_snapshot_ef_is_none_when_null():
+    data = {
+        "distance_meters": 5000.0,
+        "duration_seconds": 1500,
+        "avg_pace_sec_per_km": 300.0,
+        "avg_heart_rate": 150.0,
+        "efficiency_factor": None,
+        "date": datetime.date(2026, 5, 4),
+    }
+    conn = MagicMock()
+    conn.execute.return_value.mappings.return_value.first.return_value = _mock_row(data)
+
+    result = get_last_run_snapshot(conn)
+
+    assert result.efficiency_factor is None
 
 
 def test_recovery_colour_green():

@@ -96,6 +96,13 @@ class StravaSource(DataSource):
             duration_s: int = a.get("moving_time") or 0
             avg_pace = (duration_s / (distance_m / 1000)) if distance_m > 0 else None
 
+            avg_hr: float | None = a.get("average_heartrate")
+            ef = (
+                (distance_m * 60.0 / duration_s) / avg_hr
+                if (distance_m > 0 and duration_s > 0 and avg_hr)
+                else None
+            )
+
             start_local: str = a.get("start_date_local", "")
             activity_date = (
                 datetime.fromisoformat(start_local.replace("Z", "")).date()
@@ -114,13 +121,14 @@ class StravaSource(DataSource):
                     "duration_seconds": duration_s,
                     "elapsed_time_seconds": a.get("elapsed_time"),
                     "avg_pace_sec_per_km": avg_pace,
-                    "avg_heart_rate": a.get("average_heartrate"),
+                    "avg_heart_rate": avg_hr,
                     "max_heart_rate": a.get("max_heartrate"),
                     "avg_cadence": a.get("average_cadence"),
                     "elevation_gain_meters": a.get("total_elevation_gain"),
                     "suffer_score": a.get("suffer_score"),
                     "pr_count": a.get("pr_count", 0),
                     "perceived_effort": a.get("perceived_exertion"),
+                    "efficiency_factor": ef,
                 }
             )
         return records
