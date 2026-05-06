@@ -1,4 +1,4 @@
-"""Dashboard summary: query functions and response models for GET /dashboard/summary."""
+"""Dashboard query functions and response models for the /dashboard/* endpoints."""
 
 import datetime
 
