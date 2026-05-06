@@ -242,7 +242,7 @@ def test_upsert_calls_on_conflict_do_update_for_daily_strain():
 
 def test_upsert_returns_zero_and_skips_db_for_empty_records():
     """upsert([]) must return 0 without touching the database."""
-    from unittest.mock import MagicMock, patch
+    from unittest.mock import patch
 
     from ingestion.sources.whoop import WhoopSource
 
