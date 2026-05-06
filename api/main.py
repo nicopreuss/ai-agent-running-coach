@@ -8,7 +8,12 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 import agent.agent as agent_module
-from api.dashboard import DashboardSummary, WeeklyEFPoint, get_dashboard_summary, get_weekly_ef_trend
+from api.dashboard import (
+    DashboardSummary,
+    WeeklyEFPoint,
+    get_dashboard_summary,
+    get_weekly_ef_trend,
+)
 from db.client import get_connection
 from ingestion import pipeline
 
