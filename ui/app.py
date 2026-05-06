@@ -78,10 +78,11 @@ def _render_dashboard() -> None:
     if last_run:
         run_date = datetime.date.fromisoformat(last_run["date"])
         st.caption(f'LAST RUN · {run_date.strftime("%a %d %b").upper()}')
-        c1, c2, c3, c4, c5 = st.columns(5)
+        c1, c2, c3 = st.columns(3)
         c1.metric("Distance", f'{last_run["distance_km"]:.1f} km')
         c2.metric("Duration", _fmt_duration(last_run["duration_seconds"]))
         c3.metric("Avg Pace", _fmt_pace(last_run["avg_pace_sec_per_km"]))
+        c4, c5 = st.columns(2)
         c4.metric("Avg BPM", f'{last_run["avg_heart_rate"]:.0f}')
         ef = last_run.get("efficiency_factor")
         c5.metric("EF", f"{ef:.2f}" if ef is not None else "N/A")
