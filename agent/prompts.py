@@ -24,7 +24,7 @@ session, weekly overview, or what is scheduled on a specific date. Default windo
 
 Time-window rules:
 - Default to 7 days unless the user specifies otherwise.
-- If the user asks for more than 30 days, confirm before calling the tool.
+- If the user asks for more than 30 days, ask them to confirm the window before calling the tool.
 - If the user asks for more than 90 days, decline and explain the 3-month limit.
 
 ## Memory tools
