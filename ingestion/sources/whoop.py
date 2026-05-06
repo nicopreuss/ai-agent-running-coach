@@ -2,7 +2,7 @@
 
 import os
 import time
-from datetime import datetime
+from datetime import date, datetime
 
 import requests
 from dotenv import find_dotenv, load_dotenv, set_key
@@ -152,15 +152,23 @@ class WhoopSource(DataSource):
         return list(seen.values())
 
     def upsert(self, records: list[dict]) -> int:
-        """Insert recovery records, skipping any that already exist (dedup on whoop_cycle_id)."""
+        """Insert recovery records.
+
+        Historical rows (date != today) are skipped on conflict.
+        Today's row has its daily_strain refreshed on conflict.
+
+        Returns the number of rows affected (inserts + today's strain refreshes;
+        historical conflicts count as 0).
+        """
         if not records:
             return 0
 
         with get_connection() as conn:
-            stmt = (
-                insert(WhoopRecoveryDaily)
-                .values(records)
-                .on_conflict_do_nothing(index_elements=["whoop_cycle_id"])
+            ins = insert(WhoopRecoveryDaily).values(records)
+            stmt = ins.on_conflict_do_update(
+                index_elements=["whoop_cycle_id"],
+                set_={"daily_strain": ins.excluded.daily_strain},
+                where=(WhoopRecoveryDaily.date == date.today()),
             )
             result = conn.execute(stmt)
             conn.commit()
